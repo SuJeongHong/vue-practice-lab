@@ -177,19 +177,6 @@ const handleFocus = () => {
   }
 }
 
-// 한글 조합 중인 값도 v-model에 반영해 완성된 글자부터 검색할 수 있게 합니다.
-const handleComposingInput = (event) => {
-  if (!event.isComposing) {
-    return
-  }
-
-  const composingValue = event.target.value
-
-  if (inputValue.value !== composingValue) {
-    inputValue.value = composingValue
-  }
-}
-
 onBeforeUnmount(() => {
   closeSuggestions()
 })
@@ -201,18 +188,20 @@ onBeforeUnmount(() => {
 
     <div class="search-controls">
       <div class="input-wrapper">
-        <input
+        <el-input
           :id="inputId"
           v-model="inputValue"
+          class="location-input"
           type="search"
           :placeholder="placeholder"
           autocomplete="off"
           :disabled="loading"
+          clearable
           :aria-expanded="isSuggestionOpen"
           :aria-controls="suggestionPanelId"
-          @input="handleComposingInput"
           @focus="handleFocus"
           @blur="isSuggestionOpen = false"
+          @clear="closeSuggestions"
           @keydown.esc="isSuggestionOpen = false"
         />
 
@@ -236,9 +225,9 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <button type="submit" class="search-button" :disabled="isSubmitLoading">
+      <el-button native-type="submit" class="search-button" :loading="isSubmitLoading" :disabled="isSubmitLoading">
         {{ isSubmitLoading ? '검색 중...' : submitText }}
-      </button>
+      </el-button>
     </div>
 
     <p v-if="validationMessage" class="validation-message" role="alert">
@@ -282,22 +271,24 @@ label {
   flex: 1;
 }
 
-input {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 12px 14px;
-  color: #263238;
-  font: inherit;
+.location-input :deep(.el-input__wrapper) {
+  min-height: 43px;
+  padding: 0 14px;
   background-color: #fafcfd;
-  border: 1px solid #c9d5da;
   border-radius: 8px;
-  outline: none;
+  box-shadow: 0 0 0 1px #c9d5da inset;
 }
 
-input:focus {
+.location-input :deep(.el-input__wrapper.is-focus) {
   background-color: #ffffff;
-  border-color: #3d7d96;
-  box-shadow: 0 0 0 3px rgba(61, 125, 150, 0.12);
+  box-shadow:
+    0 0 0 1px #3d7d96 inset,
+    0 0 0 3px rgba(61, 125, 150, 0.12);
+}
+
+.location-input :deep(.el-input__inner) {
+  color: #263238;
+  font: inherit;
 }
 
 .suggestion-panel {
@@ -358,6 +349,7 @@ input:focus {
 }
 
 .search-button {
+  height: auto;
   padding: 0 18px;
   color: #ffffff;
   font-weight: 700;
@@ -372,7 +364,7 @@ input:focus {
 }
 
 .search-button:disabled,
-input:disabled {
+.location-input.is-disabled {
   cursor: not-allowed;
   opacity: 0.65;
 }

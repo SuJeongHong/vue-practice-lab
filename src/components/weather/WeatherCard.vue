@@ -77,12 +77,12 @@ const clickDetail = () => {
 
       <p>현재 기온: {{ displayTemp }}{{ configStore.unitSymbol }}</p>
 
-      <span :class="['temperature-badge', temperatureBadge.className]">
+      <el-tag effect="light" round :class="['temperature-badge', temperatureBadge.className]">
         {{ temperatureBadge.label }}
-      </span>
+      </el-tag>
     </div>
 
-    <button class="btn-detail" @click.stop="clickDetail">상세보기</button>
+    <el-button class="btn-detail" plain @click.stop="clickDetail">상세보기</el-button>
   </div>
 </template>
 
@@ -105,9 +105,12 @@ const clickDetail = () => {
 
 .temperature-badge {
   display: inline-block;
+  height: auto;
   padding: 5px 8px;
   color: white;
   font-size: 13px;
+  line-height: 1.2;
+  border: 0;
   border-radius: 8px;
 }
 

@@ -244,7 +244,7 @@ const retryPlanner = () => {
         <strong>📍 {{ selectedLocation.name }}</strong>
       </div>
 
-      <button type="button" @click="openLocationSearch">지역 변경</button>
+      <el-button class="location-change-button" @click="openLocationSearch">지역 변경</el-button>
     </section>
 
     <section v-if="isLocationSearchOpen" class="location-search-panel">
@@ -254,7 +254,7 @@ const retryPlanner = () => {
           <p>도시나 지역을 검색한 뒤 정확한 위치를 선택해 주세요.</p>
         </div>
 
-        <button v-if="selectedLocation" type="button" class="close-button" @click="closeLocationSearch">닫기</button>
+        <el-button v-if="selectedLocation" class="close-button" plain @click="closeLocationSearch">닫기</el-button>
       </div>
 
       <LocationSearchBar
@@ -283,7 +283,7 @@ const retryPlanner = () => {
       <span class="state-icon" aria-hidden="true">⚠️</span>
       <h2>정보를 불러오지 못했습니다</h2>
       <p>{{ errorMessage }}</p>
-      <button type="button" @click="retryPlanner">다시 시도</button>
+      <el-button class="retry-button" @click="retryPlanner">다시 시도</el-button>
     </section>
 
     <template v-else-if="currentWeather && dailyForecast.length > 0">

@@ -113,11 +113,9 @@ const handleClearAll = () => {
       @search="handleSearch"
     />
 
-    <p v-if="isLoading" class="status-message loading-message" role="status">날씨 정보를 불러오는 중입니다.</p>
+    <el-alert v-if="isLoading" class="status-message loading-message" title="날씨 정보를 불러오는 중입니다." type="info" :closable="false" show-icon />
 
-    <p v-else-if="errorMessage" class="status-message error-message" role="alert">
-      {{ errorMessage }}
-    </p>
+    <el-alert v-else-if="errorMessage" class="status-message error-message" :title="errorMessage" type="error" :closable="false" show-icon />
 
     <WeatherSearchResultList :results="searchResults" :result-count="resultCount" @remove="weatherSearchStore.removeSearchResult" @clear="handleClearAll" />
   </main>

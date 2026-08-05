@@ -59,7 +59,7 @@ const removeResult = () => {
 </script>
 
 <template>
-  <article class="result-card">
+  <el-card class="result-card" shadow="never">
     <header class="result-header">
       <div>
         <p class="country-label">
@@ -68,7 +68,7 @@ const removeResult = () => {
         <h2>{{ weather.name }}</h2>
       </div>
 
-      <button type="button" class="remove-button" :aria-label="`${weather.name} 검색 결과 삭제`" @click="removeResult">삭제</button>
+      <el-button class="remove-button" type="danger" plain :aria-label="`${weather.name} 검색 결과 삭제`" @click="removeResult">삭제</el-button>
     </header>
 
     <div class="weather-summary">
@@ -93,7 +93,7 @@ const removeResult = () => {
     </dl>
 
     <footer>검색 시간 {{ formattedSearchTime }}</footer>
-  </article>
+  </el-card>
 </template>
 
 <style scoped>
@@ -106,6 +106,14 @@ const removeResult = () => {
   border: 1px solid #e0e8ec;
   border-radius: 12px;
   box-shadow: 0 4px 14px rgba(39, 55, 64, 0.06);
+}
+
+.result-card :deep(.el-card__body) {
+  display: flex;
+  min-height: 100%;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 0;
 }
 
 .result-header {

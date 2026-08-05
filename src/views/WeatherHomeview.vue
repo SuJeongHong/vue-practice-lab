@@ -261,7 +261,7 @@ watchEffect(() => {
   font-size: 12px;
 }
 
-.weather-list :deep(.weather-information span) {
+.weather-list :deep(.weather-information > .temperature-badge) {
   display: inline-block;
   padding: 3px 7px;
   color: #455a64;

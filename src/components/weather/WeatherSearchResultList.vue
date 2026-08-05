@@ -24,14 +24,14 @@ const emit = defineEmits(['remove', 'clear'])
         <p>저장된 도시 {{ resultCount }}개</p>
       </div>
 
-      <button v-if="results.length > 0" type="button" @click="emit('clear')">전체 삭제</button>
+      <el-button v-if="results.length > 0" class="clear-all-button" type="danger" plain @click="emit('clear')">전체 삭제</el-button>
     </header>
 
     <div v-if="results.length > 0" class="result-grid">
       <WeatherSearchResultCard v-for="weather in results" :key="weather.id" :weather="weather" @remove="emit('remove', $event)" />
     </div>
 
-    <p v-else class="empty-message">검색한 도시가 없습니다</p>
+    <el-empty v-else class="empty-message" description="검색한 도시가 없습니다" :image-size="64" />
   </section>
 </template>
 
@@ -60,7 +60,7 @@ h2 {
   font-size: 13px;
 }
 
-.list-header button {
+.clear-all-button {
   padding: 7px 10px;
   color: #8f4141;
   font-weight: 700;
@@ -70,7 +70,7 @@ h2 {
   cursor: pointer;
 }
 
-.list-header button:hover {
+.clear-all-button:hover {
   color: #ffffff;
   background-color: #a84b4b;
   border-color: #a84b4b;

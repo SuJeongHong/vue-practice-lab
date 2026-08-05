@@ -13,8 +13,8 @@ defineProps({
 const emit = defineEmits(['update-query'])
 
 // 입력값이 바뀔 때 부모가 검색어 상태를 갱신하도록 새 값을 전달합니다.
-const handleInput = (event) => {
-  emit('update-query', event.target.value)
+const handleInput = (value) => {
+  emit('update-query', value)
 }
 
 const clearQuery = () => {
@@ -30,14 +30,14 @@ const clearQuery = () => {
         <p class="description">서울부터 제주까지, 대한민국 주요 도시의 현재 날씨를 검색하거나 지도에서 선택해 보세요.</p>
       </div>
 
-      <span class="city-count">{{ cities.length || 12 }}개 도시</span>
+      <el-tag class="city-count" effect="light" round>{{ cities.length || 12 }}개 도시</el-tag>
     </div>
 
     <label class="search-label" for="korea-city-search">도시 이름으로 찾기</label>
     <div class="search-input-wrapper">
-      <span class="search-icon" aria-hidden="true">⌕</span>
-      <input id="korea-city-search" type="search" :value="query" placeholder="예: 서울, 부산, 제주" autocomplete="off" @input="handleInput" />
-      <button v-if="query" type="button" class="clear-button" aria-label="도시 검색어 지우기" @click="clearQuery">지우기</button>
+      <el-input id="korea-city-search" class="weather-search-input" type="search" :model-value="query" placeholder="예: 서울, 부산, 제주" autocomplete="off" clearable @input="handleInput" @clear="clearQuery">
+        <template #prefix><span class="search-icon" aria-hidden="true">⌕</span></template>
+      </el-input>
     </div>
 
     <p class="search-status" aria-live="polite">
@@ -78,11 +78,13 @@ const clearQuery = () => {
 
 .city-count {
   flex: 0 0 auto;
+  height: auto;
   padding: 6px 10px;
   color: #356f86;
   font-size: 11px;
   font-weight: 800;
   background: #eaf5f8;
+  border-color: #d8e9ee;
   border-radius: 999px;
 }
 
@@ -99,47 +101,32 @@ const clearQuery = () => {
 }
 
 .search-icon {
-  position: absolute;
-  left: 13px;
   color: #5d8798;
   font-size: 21px;
   pointer-events: none;
 }
 
-.search-input-wrapper input {
-  box-sizing: border-box;
-  width: 100%;
+.weather-search-input :deep(.el-input__wrapper) {
   min-height: 46px;
-  padding: 11px 72px 11px 42px;
-  color: #263238;
-  font-size: 15px;
+  padding: 0 13px;
   background: #f8fbfc;
-  border: 1px solid #cbdde4;
   border-radius: 11px;
-  outline: none;
+  box-shadow: 0 0 0 1px #cbdde4 inset;
   transition:
     background-color 0.2s ease,
-    border-color 0.2s ease,
     box-shadow 0.2s ease;
 }
 
-.search-input-wrapper input:focus {
+.weather-search-input :deep(.el-input__wrapper.is-focus) {
   background: #ffffff;
-  border-color: #4f91aa;
-  box-shadow: 0 0 0 3px rgba(79, 145, 170, 0.13);
+  box-shadow:
+    0 0 0 1px #4f91aa inset,
+    0 0 0 3px rgba(79, 145, 170, 0.13);
 }
 
-.clear-button {
-  position: absolute;
-  right: 9px;
-  padding: 6px 9px;
-  color: #607d88;
-  font-size: 11px;
-  font-weight: 700;
-  background: #eaf1f4;
-  border: 0;
-  border-radius: 7px;
-  cursor: pointer;
+.weather-search-input :deep(.el-input__inner) {
+  color: #263238;
+  font-size: 15px;
 }
 
 .search-status {
