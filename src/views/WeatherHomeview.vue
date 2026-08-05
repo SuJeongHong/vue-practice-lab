@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import BaseDashboardCard from '@/components/dashboard/BaseDashboardCard.vue'
 import SearchBar from '@/components/dashboard/SearchBar.vue'
 import WeatherCard from '@/components/weather/WeatherCard.vue'
+import WeatherExplorer from '@/components/weather/WeatherExplorer.vue'
 import { fetchAllWeather } from '@/api/weatherApi'
 import { useConfigStore } from '@/stores/configStore'
 
@@ -60,6 +61,12 @@ const handleSelectCard = (weather) => {
 // 상세보기 버튼을 누르면 선택한 도시 ID가 포함된 상세 경로로 이동합니다.
 const handleClickDetail = (weather) => {
   router.push(`/weather/${weather.id}`)
+}
+
+// 스마트 탐색에서 고른 도시를 기존 검색과 카드 선택 흐름에 연결합니다.
+const handleExplorerSelect = (weather) => {
+  searchQuery.value = weather.name
+  handleSelectCard(weather)
 }
 
 // 카드 선택 전후의 상태 문구를 콘솔에서 비교합니다.
@@ -122,6 +129,8 @@ watchEffect(() => {
       <!-- 검색어는 부모가 관리하고 입력 컴포넌트는 변경된 값만 전달합니다. -->
       <SearchBar :query="searchQuery" @update-query="handleUpdateQuery" />
     </BaseDashboardCard>
+
+    <WeatherExplorer :weather-list="weatherList" :loading="loading" @select-city="handleExplorerSelect" />
 
     <BaseDashboardCard title="🏙️ 지역별 날씨 현황">
       <p v-if="loading" class="loading-message">날씨 정보를 불러오는 중입니다.</p>
