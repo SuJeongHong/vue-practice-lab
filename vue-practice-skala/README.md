@@ -20,10 +20,11 @@ Vue 3 강의에서 학습한 반응형 상태, 컴포넌트 통신, Vue Router, 
 
 ### 3. 전 세계 도시 검색
 
-- OpenWeather Geocoding API로 도시 자동완성 후보를 최대 5개 제공합니다.
-- 입력할 때마다 API가 호출되지 않도록 350ms 디바운스를 적용했습니다.
+- 검색어가 1글자 이상이면 OpenWeather Geocoding API로 자동완성 후보를 최대 5개 제공합니다.
+- 입력할 때마다 API가 호출되지 않도록 `watch()`와 150ms 디바운스를 적용했습니다.
+- 한글 IME 조합 중 입력값도 직접 반영해 스페이스 없이 완성된 글자부터 검색합니다.
 - 요청 ID를 비교해 늦게 도착한 이전 자동완성 응답이 최신 결과를 덮어쓰지 않도록 처리했습니다.
-- URL 쿼리(`/weather-search?city=Seoul`)와 검색 상태를 동기화합니다.
+- 선택한 도시와 좌표를 URL 쿼리(`/weather-search?city=Seoul&lat=...&lon=...`)에 동기화합니다.
 - 검색 결과는 중복 도시를 제거한 뒤 최신순으로 최대 10개까지 저장합니다.
 - 개별 삭제와 전체 삭제를 지원하며, `localStorage`를 이용해 새로고침 후에도 결과를 유지합니다.
 
@@ -52,7 +53,7 @@ Vue 3 강의에서 학습한 반응형 상태, 컴포넌트 통신, Vue Router, 
 | Framework | Vue 3 | Composition API와 SFC 기반 UI 구성 |
 | Build Tool | Vite | 개발 서버, HMR, 번들링, 환경 변수 로드 |
 | Routing | Vue Router | SPA 화면 전환, 동적 경로, 쿼리 스트링, 404 처리 |
-| State | Pinia | 온도 단위, 검색 결과, 로딩·오류·자동완성 상태 관리 |
+| State | Pinia | 온도 단위, 검색 결과, 날씨·자동완성 로딩과 오류 상태 관리 |
 | HTTP | Axios | OpenWeather Geocoding 및 Current Weather API 호출 |
 | Persistence | Web Storage API | 최근 검색 결과를 `localStorage`에 저장 |
 | Quality | ESLint, Oxlint, Prettier | 코드 정적 분석과 포맷팅 |
@@ -131,17 +132,16 @@ WeatherHomeview의 onMounted
 ### 도시 검색과 저장
 
 ```text
-WeatherApiSearchBar 입력
-  → query-change emit
-  → 350ms 디바운스
+WeatherApiSearchBar의 검색어 watch
+  → 1글자 이상 입력 시 150ms 디바운스
   → Pinia fetchCitySuggestions()
-  → Geocoding API 자동완성
+  → Geocoding API 자동완성 결과 최대 5개 표시
 
 검색 제출
-  → router.push()로 city 쿼리 변경
-  → watch(route.query.city)
+  → 자동완성 선택 시 도시명·좌표를 router query로 전달
+  → watch(route.fullPath)
   → Pinia fetchWeather()
-  → Geocoding API로 좌표 조회
+  → 선택 좌표가 없을 때만 Geocoding API로 좌표 조회
   → Current Weather API로 현재 날씨 조회
   → 중복 제거 및 최대 10개 유지
   → localStorage 저장
@@ -157,7 +157,7 @@ WeatherApiSearchBar 입력
 | `ref()` | Home, Detail, SearchBar | 목록, 검색어, 로딩, 오류, 선택 상태를 반응형 데이터로 관리 |
 | `computed()` | Home, Detail, 검색 결과 Card, Store | 필터 목록, 온도 변환, 아이콘 URL, 검색 시간, 단위 기호 계산 |
 | `onMounted()` | Home, Detail | 컴포넌트가 화면에 붙은 뒤 초기 날씨 API 호출 |
-| `onBeforeUnmount()` | Search View | 자동완성 타이머와 Store 후보 상태 정리 |
+| `onBeforeUnmount()` | SearchBar | 자동완성 타이머와 임시 후보 상태 정리 |
 
 `computed()`는 원본 상태를 직접 바꾸지 않고 필요한 표시값을 계산하며, 의존 값이 바뀔 때만 다시 평가됩니다.
 
@@ -173,7 +173,7 @@ WeatherApiSearchBar 입력
 | `WeatherHomeview.vue` | `configStore.unit` | 섭씨·화씨 변경 전후 값을 기록 |
 | `WeatherHomeview.vue` | 검색어와 필터 결과 | `watchEffect()`가 내부 의존성을 자동 추적해 검색 결과를 기록 |
 | `WeatherApiSearchBar.vue` | `props.initialCity` | URL에서 받은 초기 도시를 입력창에 즉시 반영 (`immediate`) |
-| `WeatherSearchView.vue` | `route.query.city` | 쿼리가 바뀌면 날씨 검색 Action 실행 (`immediate`) |
+| `WeatherSearchView.vue` | `route.fullPath` | 도시·국가·좌표 쿼리가 바뀌면 날씨 검색 Action 실행 (`immediate`) |
 
 - `watch()`는 감시 대상을 명시하고 `newValue`, `oldValue`를 이용하거나 API 호출 같은 후속 작업을 실행할 때 적합합니다.
 - `watchEffect()`는 함수 안에서 사용된 반응형 값을 자동 추적하며 최초에도 즉시 실행됩니다.
@@ -186,7 +186,7 @@ Vue의 단방향 데이터 흐름에 맞춰 부모는 Props로 데이터를 전�
 | --- | --- |
 | `SearchBar`: `query` | `update-query` |
 | `WeatherCard`: `weather` | `select-card`, `click-detail` |
-| `WeatherApiSearchBar`: 초기 도시, 로딩, 자동완성 목록 | `search`, `query-change`, `clear-suggestions` |
+| `WeatherApiSearchBar`: 초기 도시, 로딩 | `search` |
 | `WeatherSearchResultCard`: `weather` | `remove` |
 
 `BaseDashboardCard.vue`는 기본 `<slot />`을 제공해 카드의 공통 레이아웃은 재사용하고, 검색 영역과 날씨 목록처럼 서로 다른 콘텐츠는 부모에서 주입합니다.
@@ -205,7 +205,7 @@ Setup Store 방식으로 작성했습니다.
 
 Options Store 방식으로 작성했습니다.
 
-- State: 검색 결과, 로딩, 오류 메시지, 자동완성 목록과 로딩 상태
+- State: 검색 결과와 날씨 상태, 저장하지 않는 자동완성 후보·로딩·오류 상태
 - Getter: `resultCount` - 저장된 검색 결과 개수
 - Actions: 자동완성 조회, 날씨 검색, 결과 추가·삭제·전체 삭제
 - Persistence: Store 초기화 시 `localStorage`를 읽고 변경 시 다시 저장
