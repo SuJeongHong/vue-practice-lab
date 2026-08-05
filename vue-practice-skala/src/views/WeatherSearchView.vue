@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, watch } from 'vue'
+import { computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 
@@ -16,11 +16,7 @@ const {
   isLoading,
   errorMessage,
   resultCount,
-  citySuggestions,
-  isSuggestionLoading,
 } = storeToRefs(weatherSearchStore)
-
-let suggestionTimerId
 
 const routeCity = computed(() => {
   const city = Array.isArray(route.query.city)
@@ -32,67 +28,66 @@ const routeCity = computed(() => {
     : ''
 })
 
-const handleSearch = async (cityName) => {
-  const trimmedCityName = cityName.trim()
+const getRouteQueryValue = (value) =>
+  Array.isArray(value) ? value[0] : value
+
+const routeLocation = computed(() => {
+  const latitude = Number(getRouteQueryValue(route.query.lat))
+  const longitude = Number(getRouteQueryValue(route.query.lon))
+
+  return {
+    name: routeCity.value,
+    lat: Number.isFinite(latitude) ? latitude : undefined,
+    lon: Number.isFinite(longitude) ? longitude : undefined,
+  }
+})
+
+const handleSearch = async (locationInput) => {
+  const location =
+    typeof locationInput === 'string'
+      ? { name: locationInput }
+      : locationInput
+  const trimmedCityName = String(location?.name ?? '').trim()
 
   if (!trimmedCityName) {
     return
   }
 
-  if (
-    routeCity.value.toLowerCase() ===
-    trimmedCityName.toLowerCase()
-  ) {
-    await weatherSearchStore.fetchWeather(trimmedCityName)
-    return
+  const query = {
+    city: trimmedCityName,
+  }
+  const latitude = Number(location.lat)
+  const longitude = Number(location.lon)
+
+  if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+    query.lat = String(latitude)
+    query.lon = String(longitude)
   }
 
-  await router.push({
+  const targetRoute = router.resolve({
     path: '/weather-search',
-    query: {
-      city: trimmedCityName,
-    },
+    query,
   })
-}
 
-const handleQueryChange = (query) => {
-  window.clearTimeout(suggestionTimerId)
-
-  const trimmedQuery = query.trim()
-
-  if (!trimmedQuery) {
-    weatherSearchStore.clearCitySuggestions()
+  if (targetRoute.fullPath === route.fullPath) {
+    await weatherSearchStore.fetchWeather(location)
     return
   }
 
-  weatherSearchStore.prepareCitySuggestionSearch()
-
-  suggestionTimerId = window.setTimeout(() => {
-    weatherSearchStore.fetchCitySuggestions(trimmedQuery)
-  }, 350)
-}
-
-const clearSuggestions = () => {
-  window.clearTimeout(suggestionTimerId)
-  weatherSearchStore.clearCitySuggestions()
+  await router.push(targetRoute)
 }
 
 watch(
-  () => route.query.city,
+  () => route.fullPath,
   async () => {
     if (!routeCity.value) {
       return
     }
 
-    await weatherSearchStore.fetchWeather(routeCity.value)
+    await weatherSearchStore.fetchWeather(routeLocation.value)
   },
   { immediate: true },
 )
-
-onBeforeUnmount(() => {
-  window.clearTimeout(suggestionTimerId)
-  weatherSearchStore.clearCitySuggestions()
-})
 
 const handleClearAll = () => {
   if (searchResults.value.length === 0) {
@@ -122,11 +117,7 @@ const handleClearAll = () => {
     <WeatherApiSearchBar
       :initial-city="routeCity"
       :loading="isLoading"
-      :suggestions="citySuggestions"
-      :suggestion-loading="isSuggestionLoading"
       @search="handleSearch"
-      @query-change="handleQueryChange"
-      @clear-suggestions="clearSuggestions"
     />
 
     <p

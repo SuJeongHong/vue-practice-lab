@@ -18,8 +18,7 @@ const getKoreanLocationName = (location) =>
 
 const toCitySuggestion = (location) => ({
   id: `${location.lat}-${location.lon}`,
-  name: getKoreanLocationName(location),
-  originalName: location.name,
+  name: location.name,
   state: location.state ?? '',
   country: location.country ?? '',
   lat: location.lat,
@@ -66,6 +65,7 @@ export const useWeatherSearchStore = defineStore('weatherSearch', {
     errorMessage: '',
     citySuggestions: [],
     isSuggestionLoading: false,
+    suggestionErrorMessage: '',
   }),
 
   getters: {
@@ -77,9 +77,8 @@ export const useWeatherSearchStore = defineStore('weatherSearch', {
       const trimmedQuery = query.trim()
       const requestId = ++latestSuggestionRequestId
 
-      if (!trimmedQuery) {
-        this.citySuggestions = []
-        this.isSuggestionLoading = false
+      if (trimmedQuery.length < 1) {
+        this.clearCitySuggestions()
         return []
       }
 
@@ -88,10 +87,14 @@ export const useWeatherSearchStore = defineStore('weatherSearch', {
       if (!apiKey) {
         this.citySuggestions = []
         this.isSuggestionLoading = false
+        this.suggestionErrorMessage =
+          'OpenWeather API 키가 설정되지 않았습니다.'
         return []
       }
 
+      this.citySuggestions = []
       this.isSuggestionLoading = true
+      this.suggestionErrorMessage = ''
 
       try {
         const response = await axios.get(GEOCODING_API_URL, {
@@ -110,9 +113,25 @@ export const useWeatherSearchStore = defineStore('weatherSearch', {
         this.citySuggestions = suggestions
 
         return suggestions
-      } catch {
+      } catch (error) {
         if (requestId === latestSuggestionRequestId) {
           this.citySuggestions = []
+
+          if (axios.isAxiosError(error)) {
+            if (error.response?.status === 401) {
+              this.suggestionErrorMessage =
+                '도시 검색 API 인증에 실패했습니다.'
+            } else if (error.request && !error.response) {
+              this.suggestionErrorMessage =
+                '네트워크 연결을 확인해 주세요.'
+            } else {
+              this.suggestionErrorMessage =
+                '연관 도시를 불러오지 못했습니다.'
+            }
+          } else {
+            this.suggestionErrorMessage =
+              '연관 도시 검색 중 오류가 발생했습니다.'
+          }
         }
 
         return []
@@ -123,20 +142,21 @@ export const useWeatherSearchStore = defineStore('weatherSearch', {
       }
     },
 
-    prepareCitySuggestionSearch() {
-      latestSuggestionRequestId += 1
-      this.citySuggestions = []
-      this.isSuggestionLoading = true
-    },
-
     clearCitySuggestions() {
       latestSuggestionRequestId += 1
       this.citySuggestions = []
       this.isSuggestionLoading = false
+      this.suggestionErrorMessage = ''
     },
 
-    async fetchWeather(cityName) {
-      const trimmedCityName = cityName.trim()
+    async fetchWeather(locationInput) {
+      const locationRequest =
+        typeof locationInput === 'string'
+          ? { name: locationInput }
+          : locationInput ?? {}
+      const trimmedCityName = String(
+        locationRequest.name ?? '',
+      ).trim()
 
       if (!trimmedCityName) {
         this.errorMessage = '검색할 도시를 입력해 주세요.'
@@ -155,18 +175,40 @@ export const useWeatherSearchStore = defineStore('weatherSearch', {
       this.errorMessage = ''
 
       try {
-        const geocodingResponse = await axios.get(
-          GEOCODING_API_URL,
-          {
-            params: {
-              q: trimmedCityName,
-              limit: 1,
-              appid: apiKey,
-            },
-          },
-        )
+        const latitude = Number(locationRequest.lat)
+        const longitude = Number(locationRequest.lon)
+        const hasCoordinates =
+          Number.isFinite(latitude) && Number.isFinite(longitude)
+        let location
 
-        const location = geocodingResponse.data[0]
+        if (hasCoordinates) {
+          location = {
+            name: trimmedCityName,
+            state: locationRequest.state ?? '',
+            country: locationRequest.country ?? '',
+            lat: latitude,
+            lon: longitude,
+          }
+        } else {
+          const country = String(
+            locationRequest.country ?? '',
+          ).trim()
+          const locationQuery = country
+            ? `${trimmedCityName},${country}`
+            : trimmedCityName
+          const geocodingResponse = await axios.get(
+            GEOCODING_API_URL,
+            {
+              params: {
+                q: locationQuery,
+                limit: 1,
+                appid: apiKey,
+              },
+            },
+          )
+
+          location = geocodingResponse.data[0]
+        }
 
         if (!location) {
           this.errorMessage =

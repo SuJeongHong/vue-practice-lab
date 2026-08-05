@@ -1,5 +1,14 @@
 <script setup>
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { useWeatherSearchStore } from '@/stores/weatherSearchStore'
+
+const weatherSearchStore = useWeatherSearchStore()
+const {
+  citySuggestions,
+  isSuggestionLoading,
+  suggestionErrorMessage,
+} = storeToRefs(weatherSearchStore)
 
 const props = defineProps({
   initialCity: {
@@ -10,31 +19,80 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-  suggestions: {
-    type: Array,
-    default: () => [],
-  },
-  suggestionLoading: {
-    type: Boolean,
-    default: false,
-  },
 })
 
-const emit = defineEmits([
-  'search',
-  'query-change',
-  'clear-suggestions',
-])
+const emit = defineEmits(['search'])
 
 const inputValue = ref('')
 const validationMessage = ref('')
 const isSuggestionOpen = ref(false)
+const isDebouncing = ref(false)
+const hasSuggestionResult = ref(false)
+
+let debounceTimer = null
+let ignoreNextInputChange = false
+
+const clearDebounceTimer = () => {
+  if (debounceTimer === null) {
+    return
+  }
+
+  window.clearTimeout(debounceTimer)
+  debounceTimer = null
+}
+
+const closeSuggestions = () => {
+  clearDebounceTimer()
+  isSuggestionOpen.value = false
+  isDebouncing.value = false
+  hasSuggestionResult.value = false
+  weatherSearchStore.clearCitySuggestions()
+}
+
+watch(inputValue, (query) => {
+  validationMessage.value = ''
+
+  if (ignoreNextInputChange) {
+    ignoreNextInputChange = false
+    return
+  }
+
+  clearDebounceTimer()
+  weatherSearchStore.clearCitySuggestions()
+  hasSuggestionResult.value = false
+
+  const trimmedQuery = query.trim()
+
+  if (trimmedQuery.length < 1) {
+    isSuggestionOpen.value = false
+    isDebouncing.value = false
+    return
+  }
+
+  isSuggestionOpen.value = true
+  isDebouncing.value = true
+
+  debounceTimer = window.setTimeout(async () => {
+    debounceTimer = null
+    isDebouncing.value = false
+
+    await weatherSearchStore.fetchCitySuggestions(trimmedQuery)
+
+    if (inputValue.value.trim() === trimmedQuery) {
+      hasSuggestionResult.value = true
+    }
+  }, 150)
+})
 
 watch(
   () => props.initialCity,
   (city) => {
-    inputValue.value = city
-    isSuggestionOpen.value = false
+    if (inputValue.value !== city) {
+      ignoreNextInputChange = true
+      inputValue.value = city
+    }
+
+    closeSuggestions()
   },
   { immediate: true },
 )
@@ -49,38 +107,53 @@ const submitSearch = () => {
   }
 
   validationMessage.value = ''
-  inputValue.value = cityName
-  isSuggestionOpen.value = false
-  emit('clear-suggestions')
-  emit('search', cityName)
-}
 
-const handleInput = () => {
-  validationMessage.value = ''
-  isSuggestionOpen.value = Boolean(inputValue.value.trim())
-  emit('query-change', inputValue.value)
-}
-
-const handleFocus = () => {
-  if (!inputValue.value.trim()) {
-    return
+  if (inputValue.value !== cityName) {
+    ignoreNextInputChange = true
+    inputValue.value = cityName
   }
 
-  isSuggestionOpen.value = true
-  emit('query-change', inputValue.value)
+  closeSuggestions()
+  emit('search', { name: cityName })
 }
 
 const selectSuggestion = (city) => {
-  inputValue.value = city.name
+  if (inputValue.value !== city.name) {
+    ignoreNextInputChange = true
+    inputValue.value = city.name
+  }
+
   validationMessage.value = ''
-  isSuggestionOpen.value = false
-  emit('clear-suggestions')
+  closeSuggestions()
+  emit('search', city)
 }
 
-const formatSuggestionMeta = (city) =>
-  [city.originalName, city.state, city.country]
-    .filter(Boolean)
-    .join(' · ')
+const handleFocus = () => {
+  if (
+    inputValue.value.trim().length >= 1 &&
+    (isDebouncing.value ||
+      isSuggestionLoading.value ||
+      hasSuggestionResult.value)
+  ) {
+    isSuggestionOpen.value = true
+  }
+}
+
+const handleComposingInput = (event) => {
+  if (!event.isComposing) {
+    return
+  }
+
+  const composingValue = event.target.value
+
+  if (inputValue.value !== composingValue) {
+    inputValue.value = composingValue
+  }
+}
+
+onBeforeUnmount(() => {
+  closeSuggestions()
+})
 </script>
 
 <template>
@@ -103,48 +176,61 @@ const formatSuggestionMeta = (city) =>
           :disabled="loading"
           :aria-expanded="isSuggestionOpen"
           aria-controls="weather-city-suggestions"
-          @input="handleInput"
+          @input="handleComposingInput"
           @focus="handleFocus"
           @blur="isSuggestionOpen = false"
+          @keydown.esc="isSuggestionOpen = false"
         >
 
         <div
-          v-if="isSuggestionOpen && inputValue.trim()"
+          v-if="isSuggestionOpen"
           id="weather-city-suggestions"
           class="suggestion-panel"
         >
           <p
-            v-if="suggestionLoading"
+            v-if="isDebouncing || isSuggestionLoading"
             class="suggestion-status"
+            role="status"
           >
             연관 도시를 찾는 중입니다.
           </p>
 
+          <p
+            v-else-if="suggestionErrorMessage"
+            class="suggestion-status suggestion-error"
+            role="alert"
+          >
+            {{ suggestionErrorMessage }}
+          </p>
+
           <ul
-            v-else-if="suggestions.length > 0"
+            v-else-if="citySuggestions.length > 0"
             class="suggestion-list"
             role="listbox"
           >
             <li
-              v-for="city in suggestions"
+              v-for="city in citySuggestions"
               :key="city.id"
             >
               <button
                 type="button"
                 class="suggestion-item"
+                role="option"
                 @mousedown.prevent="selectSuggestion(city)"
               >
-                <span>{{ city.name }}</span>
-                <small>{{ formatSuggestionMeta(city) }}</small>
+                <strong>{{ city.name }}</strong>
+                <small>
+                  {{ [city.state, city.country].filter(Boolean).join(', ') }}
+                </small>
               </button>
             </li>
           </ul>
 
           <p
-            v-else
+            v-else-if="hasSuggestionResult"
             class="suggestion-status"
           >
-            API 검색 결과가 없습니다. 도시명을 더 입력해 주세요.
+            검색 결과가 없습니다.
           </p>
         </div>
       </div>
@@ -214,6 +300,62 @@ input:focus {
   box-shadow: 0 0 0 3px rgba(61, 125, 150, 0.12);
 }
 
+.suggestion-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  overflow: hidden;
+  padding: 5px;
+  background-color: #ffffff;
+  border: 1px solid #d8e2e6;
+  border-radius: 9px;
+  box-shadow: 0 10px 24px rgba(39, 55, 64, 0.12);
+}
+
+.suggestion-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.suggestion-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px;
+  color: #37474f;
+  font: inherit;
+  text-align: left;
+  background-color: transparent;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.suggestion-item:hover {
+  background-color: #edf5f8;
+}
+
+.suggestion-item small {
+  color: #78909c;
+  font-size: 12px;
+}
+
+.suggestion-status {
+  margin: 0;
+  padding: 10px;
+  color: #78909c;
+  font-size: 12px;
+}
+
+.suggestion-error {
+  color: #b33a3a;
+}
+
 .search-button {
   padding: 0 18px;
   color: #ffffff;
@@ -232,62 +374,6 @@ input:focus {
 input:disabled {
   cursor: not-allowed;
   opacity: 0.65;
-}
-
-.suggestion-panel {
-  position: absolute;
-  z-index: 10;
-  top: calc(100% + 6px);
-  right: 0;
-  left: 0;
-  overflow: hidden;
-  margin: 0;
-  padding: 5px;
-  background-color: #ffffff;
-  border: 1px solid #d8e2e6;
-  border-radius: 9px;
-  box-shadow: 0 10px 24px rgba(39, 55, 64, 0.12);
-}
-
-.suggestion-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.suggestion-status {
-  margin: 0;
-  padding: 10px;
-  color: #78909c;
-  font-size: 12px;
-}
-
-.suggestion-item {
-  display: flex;
-  width: 100%;
-  align-items: center;
-  justify-content: space-between;
-  padding: 9px 10px;
-  color: #37474f;
-  font: inherit;
-  text-align: left;
-  background-color: transparent;
-  border: 0;
-  border-radius: 6px;
-  cursor: pointer;
-}
-
-.suggestion-item:hover {
-  background-color: #edf5f8;
-}
-
-.suggestion-item span {
-  font-weight: 700;
-}
-
-.suggestion-item small {
-  color: #90a4ae;
-  font-size: 12px;
 }
 
 .validation-message {
