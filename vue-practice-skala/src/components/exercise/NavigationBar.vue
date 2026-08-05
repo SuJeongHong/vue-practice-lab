@@ -26,6 +26,15 @@ import UnitToggler from './UnitToggler.vue'
         <span aria-hidden="true">ℹ️</span>
         <span>서비스 소개</span>
       </RouterLink>
+
+      <RouterLink
+        to="/weather-search"
+        class="navigation-link"
+        exact-active-class="navigation-link--active"
+      >
+        <span aria-hidden="true">🔎</span>
+        <span>날씨 검색</span>
+      </RouterLink>
     </div>
 
     <UnitToggler />
