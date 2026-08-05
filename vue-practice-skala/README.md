@@ -36,27 +36,27 @@ Vue 3 강의에서 학습한 반응형 상태, 컴포넌트 통신, Vue Router, 
 
 ### 5. SPA 라우팅과 예외 화면
 
-| 경로 | 화면 | 역할 |
-| --- | --- | --- |
-| `/` | `WeatherHomeview.vue` | 국내 주요 도시 대시보드 |
-| `/weather/:cityId` | `WeatherDetailView.vue` | 도시별 상세 날씨 |
-| `/weather-search` | `WeatherSearchView.vue` | 도시 검색 및 결과 저장 |
-| `/about` | `WeatherAboutView.vue` | 서비스 소개 |
-| `/:pathMatch(.*)*` | `NotFoundView.vue` | 정의되지 않은 주소의 404 화면 |
+| 경로               | 화면                    | 역할                          |
+| ------------------ | ----------------------- | ----------------------------- |
+| `/`                | `WeatherHomeview.vue`   | 국내 주요 도시 대시보드       |
+| `/weather/:cityId` | `WeatherDetailView.vue` | 도시별 상세 날씨              |
+| `/weather-search`  | `WeatherSearchView.vue` | 도시 검색 및 결과 저장        |
+| `/about`           | `WeatherAboutView.vue`  | 서비스 소개                   |
+| `/:pathMatch(.*)*` | `NotFoundView.vue`      | 정의되지 않은 주소의 404 화면 |
 
 모든 View는 동적 `import()`로 불러와 라우트 단위 지연 로딩을 적용했습니다.
 
 ## 기술 스택
 
-| 구분 | 기술 | 프로젝트에서의 역할 |
-| --- | --- | --- |
-| Framework | Vue 3 | Composition API와 SFC 기반 UI 구성 |
-| Build Tool | Vite | 개발 서버, HMR, 번들링, 환경 변수 로드 |
-| Routing | Vue Router | SPA 화면 전환, 동적 경로, 쿼리 스트링, 404 처리 |
-| State | Pinia | 온도 단위, 검색 결과, 날씨·자동완성 로딩과 오류 상태 관리 |
-| HTTP | Axios | OpenWeather Geocoding 및 Current Weather API 호출 |
-| Persistence | Web Storage API | 최근 검색 결과를 `localStorage`에 저장 |
-| Quality | ESLint, Oxlint, Prettier | 코드 정적 분석과 포맷팅 |
+| 구분        | 기술                     | 프로젝트에서의 역할                                       |
+| ----------- | ------------------------ | --------------------------------------------------------- |
+| Framework   | Vue 3                    | Composition API와 SFC 기반 UI 구성                        |
+| Build Tool  | Vite                     | 개발 서버, HMR, 번들링, 환경 변수 로드                    |
+| Routing     | Vue Router               | SPA 화면 전환, 동적 경로, 쿼리 스트링, 404 처리           |
+| State       | Pinia                    | 온도 단위, 검색 결과, 날씨·자동완성 로딩과 오류 상태 관리 |
+| HTTP        | Axios                    | OpenWeather Geocoding 및 Current Weather API 호출         |
+| Persistence | Web Storage API          | 최근 검색 결과를 `localStorage`에 저장                    |
+| Quality     | ESLint, Oxlint, Prettier | 코드 정적 분석과 포맷팅                                   |
 
 ## 프로젝트 구조
 
@@ -83,9 +83,8 @@ vue-practice-skala/
 │   ├── router/
 │   │   └── index.js              # 경로, Lazy Loading, 동적 Route, 404 설정
 │   ├── stores/
-│   │   ├── configStore.js        # 섭씨·화씨 상태, 기호 Getter, 토글 Action
+│   │   ├── configStore.js        # 섭씨·화씨 상태와 단위 기호 Getter
 │   │   ├── weatherSearchStore.js # 검색 API, 결과·상태 관리, localStorage 동기화
-│   │   └── counter.js            # Pinia 기본 구조 학습용 예제 Store
 │   ├── views/
 │   │   ├── WeatherHomeview.vue   # 메인 날씨 대시보드
 │   │   ├── WeatherDetailView.vue # 동적 도시 상세 페이지
@@ -99,8 +98,6 @@ vue-practice-skala/
 ├── package.json
 └── vite.config.js                # Vue 플러그인과 `@` 경로 별칭 설정
 ```
-
-`counter.js`는 Pinia의 `state`, `getters`, `actions` 구조를 익히기 위한 기본 예제이며 현재 날씨 화면에서는 사용하지 않습니다.
 
 ## 애플리케이션 구성과 데이터 흐름
 
@@ -152,12 +149,12 @@ WeatherApiSearchBar의 검색어 watch
 
 ### Composition API
 
-| 기술 | 적용 위치 | 사용 목적 |
-| --- | --- | --- |
-| `ref()` | Home, Detail, SearchBar | 목록, 검색어, 로딩, 오류, 선택 상태를 반응형 데이터로 관리 |
-| `computed()` | Home, Detail, 검색 결과 Card, Store | 필터 목록, 온도 변환, 아이콘 URL, 검색 시간, 단위 기호 계산 |
-| `onMounted()` | Home, Detail | 컴포넌트가 화면에 붙은 뒤 초기 날씨 API 호출 |
-| `onBeforeUnmount()` | SearchBar | 자동완성 타이머와 임시 후보 상태 정리 |
+| 기술                | 적용 위치                           | 사용 목적                                                   |
+| ------------------- | ----------------------------------- | ----------------------------------------------------------- |
+| `ref()`             | Home, Detail, SearchBar             | 목록, 검색어, 로딩, 오류, 선택 상태를 반응형 데이터로 관리  |
+| `computed()`        | Home, Detail, 검색 결과 Card, Store | 필터 목록, 온도 변환, 아이콘 URL, 검색 시간, 단위 기호 계산 |
+| `onMounted()`       | Home, Detail                        | 컴포넌트가 화면에 붙은 뒤 초기 날씨 API 호출                |
+| `onBeforeUnmount()` | SearchBar                           | 자동완성 타이머와 임시 후보 상태 정리                       |
 
 `computed()`는 원본 상태를 직접 바꾸지 않고 필요한 표시값을 계산하며, 의존 값이 바뀔 때만 다시 평가됩니다.
 
@@ -165,15 +162,16 @@ WeatherApiSearchBar의 검색어 watch
 
 이 프로젝트에서는 값의 변화를 관찰한 뒤 후속 작업이 필요한 경우에 사용했습니다.
 
-| 파일 | 감시 대상 | 동작 |
-| --- | --- | --- |
-| `WeatherHomeview.vue` | `selectedCityInfo` | 카드 선택 전후 상태를 콘솔에 기록 |
-| `WeatherHomeview.vue` | `weatherList` | API 수신 전후 도시 수와 결과를 기록 |
-| `WeatherHomeview.vue` | `loading` | API 요청 시작·완료 상태를 기록 |
-| `WeatherHomeview.vue` | `configStore.unit` | 섭씨·화씨 변경 전후 값을 기록 |
-| `WeatherHomeview.vue` | 검색어와 필터 결과 | `watchEffect()`가 내부 의존성을 자동 추적해 검색 결과를 기록 |
-| `WeatherApiSearchBar.vue` | `props.initialCity` | URL에서 받은 초기 도시를 입력창에 즉시 반영 (`immediate`) |
-| `WeatherSearchView.vue` | `route.fullPath` | 도시·국가·좌표 쿼리가 바뀌면 날씨 검색 Action 실행 (`immediate`) |
+| 파일                      | 감시 대상           | 동작                                                        |
+| ------------------------- | ------------------- | ----------------------------------------------------------- |
+| `WeatherHomeview.vue`     | `selectedCityInfo`  | 카드 선택 전후 상태를 콘솔에 기록                           |
+| `WeatherHomeview.vue`     | `weatherList`       | API 수신 전후 도시 수와 결과를 콘솔에 기록                  |
+| `WeatherHomeview.vue`     | `loading`           | API 요청 시작·완료 상태를 콘솔에 기록                       |
+| `WeatherHomeview.vue`     | `configStore.unit`  | 섭씨·화씨 변경 전후 값을 콘솔에 기록                        |
+| `WeatherHomeview.vue`     | 검색어와 필터 결과  | `watchEffect()`로 최신 검색 상태를 콘솔에 기록              |
+| `WeatherApiSearchBar.vue` | `inputValue`        | 150ms 디바운스 후 도시 자동완성 API 요청                    |
+| `WeatherApiSearchBar.vue` | `props.initialCity` | URL에서 받은 초기 도시를 입력창에 즉시 반영 (`immediate`)   |
+| `WeatherSearchView.vue`   | `route.fullPath`    | 도시·좌표 쿼리가 바뀌면 날씨 검색 Action 실행 (`immediate`) |
 
 - `watch()`는 감시 대상을 명시하고 `newValue`, `oldValue`를 이용하거나 API 호출 같은 후속 작업을 실행할 때 적합합니다.
 - `watchEffect()`는 함수 안에서 사용된 반응형 값을 자동 추적하며 최초에도 즉시 실행됩니다.
@@ -182,12 +180,12 @@ WeatherApiSearchBar의 검색어 watch
 
 Vue의 단방향 데이터 흐름에 맞춰 부모는 Props로 데이터를 전달하고, 자식은 Emits로 사용자 동작을 알립니다.
 
-| 부모 → 자식 Props | 자식 → 부모 Emits |
-| --- | --- |
-| `SearchBar`: `query` | `update-query` |
-| `WeatherCard`: `weather` | `select-card`, `click-detail` |
-| `WeatherApiSearchBar`: 초기 도시, 로딩 | `search` |
-| `WeatherSearchResultCard`: `weather` | `remove` |
+| 부모 → 자식 Props                      | 자식 → 부모 Emits             |
+| -------------------------------------- | ----------------------------- |
+| `SearchBar`: `query`                   | `update-query`                |
+| `WeatherCard`: `weather`               | `select-card`, `click-detail` |
+| `WeatherApiSearchBar`: 초기 도시, 로딩 | `search`                      |
+| `WeatherSearchResultCard`: `weather`   | `remove`                      |
 
 `BaseDashboardCard.vue`는 기본 `<slot />`을 제공해 카드의 공통 레이아웃은 재사용하고, 검색 영역과 날씨 목록처럼 서로 다른 콘텐츠는 부모에서 주입합니다.
 
@@ -199,7 +197,8 @@ Setup Store 방식으로 작성했습니다.
 
 - State: `unit` (`ref`) - `celsius` 또는 `fahrenheit`
 - Getter: `unitSymbol` (`computed`) - 현재 단위에 맞는 `°C` 또는 `°F`
-- Action: `toggleUnit()` - 두 단위를 전환
+
+`UnitToggler.vue`의 스위치가 `unit`에 연결되어 단위를 변경합니다.
 
 #### `weatherSearchStore`
 
@@ -268,23 +267,23 @@ npm run dev
 
 ## 명령어
 
-| 명령어 | 설명 |
-| --- | --- |
-| `npm run dev` | Vite 개발 서버 실행 |
-| `npm run build` | 프로덕션용 정적 파일 빌드 |
-| `npm run preview` | 빌드 결과 로컬 미리보기 |
-| `npm run lint` | Oxlint와 ESLint 검사 및 자동 수정 |
-| `npm run format` | `src` 폴더 Prettier 포맷팅 |
+| 명령어            | 설명                              |
+| ----------------- | --------------------------------- |
+| `npm run dev`     | Vite 개발 서버 실행               |
+| `npm run build`   | 프로덕션용 정적 파일 빌드         |
+| `npm run preview` | 빌드 결과 로컬 미리보기           |
+| `npm run lint`    | Oxlint와 ESLint 검사 및 자동 수정 |
+| `npm run format`  | `src` 폴더 Prettier 포맷팅        |
 
 ## 학습 내용과 구현 매핑
 
-| 강의 주제 | 프로젝트 구현 |
-| --- | --- |
-| Vue 문법 | 데이터 바인딩, 이벤트 처리, 조건부·목록 렌더링 |
-| Composition API | `ref`, `computed`, `watch`, `watchEffect`, Lifecycle Hook |
-| Vue Component | SFC, Props, Emits, Slot, 부모·자식 데이터 흐름 |
-| Vue Router | SPA, Lazy Loading, 동적 Route, Query String, 404 |
-| Pinia | 전역 단위 설정, 검색 State·Getter·Action, `storeToRefs` |
-| Axios | OpenWeather REST API, `async/await`, 오류·로딩 처리 |
+| 강의 주제         | 프로젝트 구현                                                          |
+| ----------------- | ---------------------------------------------------------------------- |
+| Vue 문법          | 데이터 바인딩, 이벤트 처리, 조건부·목록 렌더링                         |
+| Composition API   | `ref`, `computed`, `watch`, `watchEffect`, Lifecycle Hook              |
+| Vue Component     | SFC, Props, Emits, Slot, 부모·자식 데이터 흐름                         |
+| Vue Router        | SPA, Lazy Loading, 동적 Route, Query String, 404                       |
+| Pinia             | 전역 단위 설정, 검색 State·Getter·Action, `storeToRefs`                |
+| Axios             | OpenWeather REST API, `async/await`, 오류·로딩 처리                    |
 | Modern JavaScript | 배열 메서드, 구조 분해, Optional Chaining, Nullish Coalescing, Promise |
-| Vite 및 배포 준비 | 환경 변수, 경로 별칭, ESLint, Prettier, Production Build |
+| Vite 및 배포 준비 | 환경 변수, 경로 별칭, ESLint, Prettier, Production Build               |

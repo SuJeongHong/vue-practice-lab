@@ -1,6 +1,7 @@
 <script setup>
 import { useConfigStore } from '@/stores/configStore'
 
+// 스위치 값을 전역 Store에 직접 연결해 모든 화면의 온도 단위를 함께 바꿉니다.
 const configStore = useConfigStore()
 </script>
 

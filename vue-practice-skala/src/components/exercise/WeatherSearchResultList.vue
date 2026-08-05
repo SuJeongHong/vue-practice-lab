@@ -12,33 +12,22 @@ defineProps({
   },
 })
 
-const emit = defineEmits([
-  'remove',
-  'clear',
-])
+const emit = defineEmits(['remove', 'clear'])
 </script>
 
 <template>
   <section class="result-section">
+    <!-- 결과 목록을 렌더링하고 개별 삭제와 전체 삭제 동작을 부모에 전달합니다. -->
     <header class="list-header">
       <div>
         <h2>검색 결과</h2>
         <p>저장된 도시 {{ resultCount }}개</p>
       </div>
 
-      <button
-        v-if="results.length > 0"
-        type="button"
-        @click="emit('clear')"
-      >
-        전체 삭제
-      </button>
+      <button v-if="results.length > 0" type="button" @click="emit('clear')">전체 삭제</button>
     </header>
 
-    <div
-      v-if="results.length > 0"
-      class="result-grid"
-    >
+    <div v-if="results.length > 0" class="result-grid">
       <WeatherSearchResultCard
         v-for="weather in results"
         :key="weather.id"
@@ -47,12 +36,7 @@ const emit = defineEmits([
       />
     </div>
 
-    <p
-      v-else
-      class="empty-message"
-    >
-      검색한 도시가 없습니다
-    </p>
+    <p v-else class="empty-message">검색한 도시가 없습니다</p>
   </section>
 </template>
 

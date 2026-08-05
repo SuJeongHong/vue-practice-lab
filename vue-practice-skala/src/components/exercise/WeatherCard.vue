@@ -1,10 +1,18 @@
 <script setup>
-import {computed} from 'vue'
+import { computed } from 'vue'
 import { useConfigStore } from '@/stores/configStore'
 
+const props = defineProps({
+  weather: {
+    type: Object,
+    required: true,
+  },
+})
 
+const emit = defineEmits(['select-card', 'click-detail'])
 const configStore = useConfigStore()
 
+// 원본 섭씨 온도를 전역 설정에 맞는 표시 온도로 변환합니다.
 const displayTemp = computed(() => {
   const temp = props.weather.temp
 
@@ -15,38 +23,49 @@ const displayTemp = computed(() => {
   return temp
 })
 
-const props = defineProps({
-  weather: {
-    type: Object,
-    required: true,
-  },
+// 현재 온도 구간에 맞는 안내 문구와 배지 색상 클래스를 결정합니다.
+const temperatureBadge = computed(() => {
+  const temperature = props.weather.temp
+
+  if (temperature >= 35) {
+    return { label: '🥵 폭염', className: 'very-hot' }
+  }
+
+  if (temperature >= 30) {
+    return { label: '🔥 매우 더움', className: 'hot' }
+  }
+
+  if (temperature >= 25) {
+    return { label: '☀️ 더움', className: 'warm' }
+  }
+
+  if (temperature >= 20) {
+    return { label: '🙂 따뜻함', className: 'mild' }
+  }
+
+  if (temperature >= 10) {
+    return { label: '🍃 선선함', className: 'cool' }
+  }
+
+  if (temperature >= 0) {
+    return { label: '🥶 추움', className: 'cold' }
+  }
+
+  return { label: '❄️ 한파 (0도 미만)', className: 'freezing' }
 })
 
-const emit = defineEmits([
-  'select-card',
-  'click-detail',
-])
-
+// 카드와 상세보기 버튼의 사용자 동작을 각각 부모 컴포넌트에 전달합니다.
 const selectCard = () => {
-  emit(
-    'select-card',
-    props.weather,
-  )
+  emit('select-card', props.weather)
 }
 
 const clickDetail = () => {
-  emit(
-    'click-detail',
-    props.weather,
-  )
+  emit('click-detail', props.weather)
 }
 </script>
 
 <template>
-  <div
-    class="weather-card"
-    @click="selectCard"
-  >
+  <div class="weather-card" @click="selectCard">
     <div class="weather-information">
       <h4>
         {{ weather.name }}
@@ -56,25 +75,14 @@ const clickDetail = () => {
         {{ weather.condition }}
       </p>
 
-      <p>
-        현재 기온: {{ displayTemp }}{{ configStore.unitSymbol }}
-      </p>
+      <p>현재 기온: {{ displayTemp }}{{ configStore.unitSymbol }}</p>
 
-      <span v-if="weather.temp >= 35" class="very_hot">🥵 폭염 </span>
-      <span v-else-if="weather.temp >= 30" class="badge_hot">🔥 매우 더움</span>
-      <span v-else-if="weather.temp >= 25" class="badge_warm">☀️ 더움 </span>
-      <span v-else-if="weather.temp >= 20" class="badge_mild">🙂 따뜻함 </span>
-      <span v-else-if="weather.temp >= 10" class="badge_cool">🍃 선선함 </span>
-      <span v-else-if="weather.temp >= 0" class="very_cold">🥶 추움 </span>
-      <span v-else class="freezing">❄️ 한파 (0도 미만)</span>
+      <span :class="['temperature-badge', temperatureBadge.className]">
+        {{ temperatureBadge.label }}
+      </span>
     </div>
 
-    <button
-      class="btn-detail"
-      @click.stop="clickDetail"
-    >
-      상세보기
-    </button>
+    <button class="btn-detail" @click.stop="clickDetail">상세보기</button>
   </div>
 </template>
 
@@ -99,8 +107,8 @@ const clickDetail = () => {
   display: inline-block;
   padding: 5px 8px;
   color: white;
-  border-radius: 8px;
   font-size: 13px;
+  border-radius: 8px;
 }
 
 .very-hot {

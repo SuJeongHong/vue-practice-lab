@@ -1,22 +1,11 @@
 <script setup>
-import {
-  computed,
-  onMounted,
-  ref,
-} from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
-import {
-  RouterLink,
-  useRoute,
-} from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 
-import {
-  fetchWeatherByCityId,
-} from '@/api/weatherApi'
+import { fetchWeatherByCityId } from '@/api/weatherApi'
 
-import {
-  useConfigStore,
-} from '@/stores/configStore'
+import { useConfigStore } from '@/stores/configStore'
 
 const route = useRoute()
 const configStore = useConfigStore()
@@ -25,24 +14,24 @@ const selectedWeather = ref(null)
 const loading = ref(false)
 const errorMessage = ref('')
 
+// 경로의 도시 ID로 상세 날씨를 조회하고 로딩 및 오류 상태를 관리합니다.
 onMounted(async () => {
   loading.value = true
 
   try {
     const cityId = route.params.cityId
 
-    selectedWeather.value =
-      await fetchWeatherByCityId(cityId)
+    selectedWeather.value = await fetchWeatherByCityId(cityId)
   } catch (error) {
     console.error(error)
 
-    errorMessage.value =
-      '상세 날씨 정보를 가져오지 못했습니다.'
+    errorMessage.value = '상세 날씨 정보를 가져오지 못했습니다.'
   } finally {
     loading.value = false
   }
 })
 
+// 상세 화면의 원본 섭씨 온도를 전역 단위 설정에 맞게 변환합니다.
 const displayTemp = computed(() => {
   const temp = selectedWeather.value?.temp
 
@@ -60,25 +49,13 @@ const displayTemp = computed(() => {
 
 <template>
   <section class="weather-detail">
-    <p
-      v-if="loading"
-      class="loading-message"
-    >
-      상세 날씨 정보를 불러오는 중입니다.
-    </p>
+    <p v-if="loading" class="loading-message">상세 날씨 정보를 불러오는 중입니다.</p>
 
-    <p
-      v-else-if="errorMessage"
-      class="error-message"
-    >
+    <p v-else-if="errorMessage" class="error-message">
       {{ errorMessage }}
     </p>
 
-    <!-- ID와 일치하는 도시를 찾았을 때 -->
-    <article
-      v-else-if="selectedWeather"
-      class="detail-card"
-    >
+    <article v-else-if="selectedWeather" class="detail-card">
       <header class="detail-header">
         <div class="header-top">
           <span class="content-label">WEATHER NOW</span>
@@ -86,7 +63,7 @@ const displayTemp = computed(() => {
 
         <div class="title-row">
           <div>
-            <h2>{{ selectedWeather.name }} 지역 날씨 </h2>
+            <h2>{{ selectedWeather.name }} 지역 날씨</h2>
           </div>
           <span class="detail-condition"> {{ selectedWeather.conditionIcon }}</span>
         </div>
@@ -117,18 +94,12 @@ const displayTemp = computed(() => {
       </div>
     </article>
 
-    <!-- ID와 일치하는 도시가 없을 때 -->
     <div v-else>
       <h2>도시 정보를 찾을 수 없습니다.</h2>
       <p>도시 코드: {{ route.params.cityId }}</p>
     </div>
 
-    <RouterLink
-      to="/"
-      class="back-link"
-    >
-      ← 날씨 대시보드로 돌아가기
-    </RouterLink>
+    <RouterLink to="/" class="back-link"> ← 날씨 대시보드로 돌아가기 </RouterLink>
   </section>
 </template>
 
@@ -190,36 +161,15 @@ const displayTemp = computed(() => {
   vertical-align: middle;
 }
 
-
-.city-code {
-  padding: 4px 9px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 999px;
-}
-
 .title-row {
   align-items: flex-end;
   margin-top: 22px;
-}
-
-.title-row p {
-  margin: 0 0 3px;
-  color: rgba(255, 255, 255, 0.76);
-  font-size: 12px;
 }
 
 .title-row h2 {
   margin: 0;
   font-size: 29px;
   letter-spacing: -0.04em;
-}
-
-.header-icon {
-  font-size: 45px;
-  filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.15));
 }
 
 .card-body {

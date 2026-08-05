@@ -1,18 +1,11 @@
-import {ref, computed} from 'vue'
-import {defineStore} from 'pinia'
+import { computed, ref } from 'vue'
+import { defineStore } from 'pinia'
 
-export const useConfigStore = defineStore('config', ()=> {
-    // 온도 단위 설정
-    const unit = ref('celsius')
-    // 단위 기호 계산
-    const unitSymbol = computed(()=>{
-        return unit.value === 'celsius' ? '°C' : '°F'
-    })
-    // 단위 토글 함수(스위칭))
-    function toggleUnit() {
-        unit.value = unit.value === 'celsius' ? 'fahrenheit' : 'celsius'
-    }
+export const useConfigStore = defineStore('config', () => {
+  const unit = ref('celsius')
 
-    return { unit, unitSymbol, toggleUnit }
+  // 선택된 온도 단위에 맞는 기호를 모든 날씨 화면에 제공합니다.
+  const unitSymbol = computed(() => (unit.value === 'celsius' ? '°C' : '°F'))
 
+  return { unit, unitSymbol }
 })

@@ -11,26 +11,17 @@ const route = useRoute()
 const router = useRouter()
 const weatherSearchStore = useWeatherSearchStore()
 
-const {
-  searchResults,
-  isLoading,
-  errorMessage,
-  resultCount,
-} = storeToRefs(weatherSearchStore)
+const { searchResults, isLoading, errorMessage, resultCount } = storeToRefs(weatherSearchStore)
 
 const routeCity = computed(() => {
-  const city = Array.isArray(route.query.city)
-    ? route.query.city[0]
-    : route.query.city
+  const city = Array.isArray(route.query.city) ? route.query.city[0] : route.query.city
 
-  return typeof city === 'string'
-    ? city.trim()
-    : ''
+  return typeof city === 'string' ? city.trim() : ''
 })
 
-const getRouteQueryValue = (value) =>
-  Array.isArray(value) ? value[0] : value
+const getRouteQueryValue = (value) => (Array.isArray(value) ? value[0] : value)
 
+// URL의 도시명과 좌표를 날씨 Store가 사용할 검색 객체로 변환합니다.
 const routeLocation = computed(() => {
   const latitude = Number(getRouteQueryValue(route.query.lat))
   const longitude = Number(getRouteQueryValue(route.query.lon))
@@ -42,11 +33,9 @@ const routeLocation = computed(() => {
   }
 })
 
+// 검색한 도시를 URL에 기록해 새로고침하거나 공유해도 같은 검색을 재현합니다.
 const handleSearch = async (locationInput) => {
-  const location =
-    typeof locationInput === 'string'
-      ? { name: locationInput }
-      : locationInput
+  const location = locationInput
   const trimmedCityName = String(location?.name ?? '').trim()
 
   if (!trimmedCityName) {
@@ -77,6 +66,7 @@ const handleSearch = async (locationInput) => {
   await router.push(targetRoute)
 }
 
+// 검색 URL이 바뀌면 해당 도시의 날씨를 조회합니다.
 watch(
   () => route.fullPath,
   async () => {
@@ -89,14 +79,13 @@ watch(
   { immediate: true },
 )
 
+// 사용자의 확인을 받은 뒤 최근 검색 결과 전체를 삭제합니다.
 const handleClearAll = () => {
   if (searchResults.value.length === 0) {
     return
   }
 
-  const shouldClear = window.confirm(
-    '저장된 날씨 검색 결과를 모두 삭제할까요?',
-  )
+  const shouldClear = window.confirm('저장된 날씨 검색 결과를 모두 삭제할까요?')
 
   if (shouldClear) {
     weatherSearchStore.clearSearchResults()
@@ -109,30 +98,16 @@ const handleClearAll = () => {
     <header class="page-header">
       <p class="eyebrow">OPENWEATHER SEARCH</p>
       <h1>날씨 검색 대시보드</h1>
-      <p>
-        원하는 지역이나 도시를 검색하고 최근 날씨를 저장해 보세요.
-      </p>
+      <p>원하는 지역이나 도시를 검색하고 최근 날씨를 저장해 보세요.</p>
     </header>
 
-    <WeatherApiSearchBar
-      :initial-city="routeCity"
-      :loading="isLoading"
-      @search="handleSearch"
-    />
+    <WeatherApiSearchBar :initial-city="routeCity" :loading="isLoading" @search="handleSearch" />
 
-    <p
-      v-if="isLoading"
-      class="status-message loading-message"
-      role="status"
-    >
+    <p v-if="isLoading" class="status-message loading-message" role="status">
       날씨 정보를 불러오는 중입니다.
     </p>
 
-    <p
-      v-else-if="errorMessage"
-      class="status-message error-message"
-      role="alert"
-    >
+    <p v-else-if="errorMessage" class="status-message error-message" role="alert">
       {{ errorMessage }}
     </p>
 

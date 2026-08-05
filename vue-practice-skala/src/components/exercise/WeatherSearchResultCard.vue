@@ -10,12 +10,11 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits([
-  'remove',
-])
+const emit = defineEmits(['remove'])
 
 const configStore = useConfigStore()
 
+// 검색 결과의 섭씨 값을 현재 전역 단위에 맞춰 반올림해 표시합니다.
 const convertTemperature = (temperature) => {
   if (configStore.unit === 'fahrenheit') {
     return Math.round((temperature * 9) / 5 + 32)
@@ -24,14 +23,11 @@ const convertTemperature = (temperature) => {
   return Math.round(temperature)
 }
 
-const displayTemp = computed(() =>
-  convertTemperature(props.weather.temp),
-)
+const displayTemp = computed(() => convertTemperature(props.weather.temp))
 
-const displayFeelsLike = computed(() =>
-  convertTemperature(props.weather.feelsLike),
-)
+const displayFeelsLike = computed(() => convertTemperature(props.weather.feelsLike))
 
+// API가 제공한 아이콘 코드가 있을 때만 날씨 이미지 주소를 만듭니다.
 const iconUrl = computed(() => {
   if (!props.weather.icon) {
     return ''
@@ -40,6 +36,7 @@ const iconUrl = computed(() => {
   return `https://openweathermap.org/img/wn/${props.weather.icon}@2x.png`
 })
 
+// 저장된 ISO 검색 시간을 한국식 월·일·시각 형식으로 변환합니다.
 const formattedSearchTime = computed(() => {
   const searchedAt = new Date(props.weather.searchedAt)
 
@@ -55,6 +52,7 @@ const formattedSearchTime = computed(() => {
   }).format(searchedAt)
 })
 
+// 삭제할 검색 결과의 ID를 부모 목록 컴포넌트에 전달합니다.
 const removeResult = () => {
   emit('remove', props.weather.id)
 }
@@ -81,16 +79,10 @@ const removeResult = () => {
     </header>
 
     <div class="weather-summary">
-      <img
-        v-if="iconUrl"
-        :src="iconUrl"
-        :alt="weather.description"
-      >
+      <img v-if="iconUrl" :src="iconUrl" :alt="weather.description" />
 
       <div>
-        <strong class="current-temp">
-          {{ displayTemp }}{{ configStore.unitSymbol }}
-        </strong>
+        <strong class="current-temp"> {{ displayTemp }}{{ configStore.unitSymbol }} </strong>
         <p>{{ weather.description }}</p>
       </div>
     </div>
@@ -98,9 +90,7 @@ const removeResult = () => {
     <dl class="weather-details">
       <div>
         <dt>체감온도</dt>
-        <dd>
-          {{ displayFeelsLike }}{{ configStore.unitSymbol }}
-        </dd>
+        <dd>{{ displayFeelsLike }}{{ configStore.unitSymbol }}</dd>
       </div>
 
       <div>
@@ -109,9 +99,7 @@ const removeResult = () => {
       </div>
     </dl>
 
-    <footer>
-      검색 시간 {{ formattedSearchTime }}
-    </footer>
+    <footer>검색 시간 {{ formattedSearchTime }}</footer>
   </article>
 </template>
 

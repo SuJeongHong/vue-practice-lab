@@ -1,14 +1,11 @@
 <script setup>
-  //import { RouterLink, RouterView } from 'vue-router'
-//import UnitToggler from './components/exercise/UnitToggler.vue';
-  import NavigationBar from './components/exercise/NavigationBar.vue';
- // import WeatherHomeview from './views/WeatherHomeview.vue'
-
+import NavigationBar from './components/exercise/NavigationBar.vue'
 </script>
 
 <template>
   <div class="app-container">
-    <NavigationBar/>
+    <!-- 모든 페이지에서 공통 메뉴를 보여 주고 현재 경로의 화면을 렌더링합니다. -->
+    <NavigationBar />
 
     <RouterView />
   </div>
@@ -20,22 +17,5 @@
   max-width: 900px;
   margin: 0 auto;
   padding: 24px;
-}
-
-nav {
-  display: flex;
-  justify-content: center;
-  gap: 24px;
-  margin-bottom: 32px;
-}
-
-nav a {
-  color: #37474f;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-nav a.router-link-active {
-  color: #2e7d32;
 }
 </style>

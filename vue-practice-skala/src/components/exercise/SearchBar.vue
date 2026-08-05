@@ -1,5 +1,4 @@
 <script setup>
-// [props] 부모(WeatherParent)로부터 검색도시 반응형 데이터(searchQuery)를 전달받음
 defineProps({
   query: {
     type: String,
@@ -7,29 +6,17 @@ defineProps({
   },
 })
 
-// [emits] 검색어가 변경되었음을 부모에게 알리기 위한 update-query 이벤트 선언
-const emit = defineEmits([
-  'update-query',
-])
+const emit = defineEmits(['update-query'])
 
+// 입력값이 바뀔 때 부모가 검색어 상태를 갱신하도록 새 값을 전달합니다.
 const handleInput = (event) => {
-  // [emits] 입력된 검색어를 update-query 이벤트와 함께 부모에게 전달
-  emit(
-    'update-query',
-    event.target.value,
-  )
+  emit('update-query', event.target.value)
 }
 </script>
 
 <template>
   <div class="search-area">
-    <!-- [props] 부모로부터 전달받은 query 값을 검색창에 표시 -->
-    <input
-      type="text"
-      :value="query"
-      placeholder="검색할 도시 이름 입력"
-      @input="handleInput"
-    />
+    <input type="text" :value="query" placeholder="검색할 도시 이름 입력" @input="handleInput" />
 
     <p>
       검색 중인 도시:

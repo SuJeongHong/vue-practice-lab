@@ -1,11 +1,5 @@
 <script setup>
-import {
-  ref,
-  computed,
-  watch,
-  watchEffect,
-  onMounted,
-} from 'vue'
+import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 
 import BaseDashboardCard from '@/components/exercise/BaseDashboardCard.vue'
@@ -14,11 +8,15 @@ import WeatherCard from '@/components/exercise/WeatherCard.vue'
 import { fetchAllWeather } from '@/api/weatherApi'
 import { useConfigStore } from '@/stores/configStore'
 
-// 모든 날씨 데이터는 부모 컴포넌트에서 관리
 const weatherList = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
+const searchQuery = ref('')
+const selectedCityInfo = ref('카드를 클릭하거나 검색해 보세요.')
+const router = useRouter()
+const configStore = useConfigStore()
 
+// 등록된 국내 도시의 날씨를 불러오고 요청 상태를 화면에 반영합니다.
 const loadWeatherList = async () => {
   loading.value = true
   errorMessage.value = ''
@@ -28,8 +26,7 @@ const loadWeatherList = async () => {
   } catch (error) {
     console.error('날씨 API 요청 실패:', error)
 
-    errorMessage.value =
-      '날씨 정보를 가져오지 못했습니다.'
+    errorMessage.value = '날씨 정보를 가져오지 못했습니다.'
   } finally {
     loading.value = false
   }
@@ -39,105 +36,62 @@ onMounted(() => {
   loadWeatherList()
 })
 
-// 부모가 관리하는 반응형 상태
-const searchQuery = ref('')
-
-const selectedCityInfo = ref('카드를 클릭하거나 검색해 보세요.',)
-
-// 검색어에 해당하는 도시 목록 계산
+// 입력한 도시 이름과 일치하는 카드만 실시간으로 필터링합니다.
 const filteredWeatherList = computed(() => {
   const query = searchQuery.value.trim()
 
-  // 검색어가 비어 있으면 원본 데이터 반환
   if (!query) {
     return weatherList.value
   }
 
-  // 검색어와 일치하는 도시만 반환
-  return weatherList.value.filter((item) =>
-    item.name.includes(query),
-  )
+  return weatherList.value.filter((item) => item.name.includes(query))
 })
 
-// SearchBar의 update-query 이벤트 처리
+// 검색 입력 컴포넌트가 전달한 값을 부모의 검색어 상태에 반영합니다.
 const handleUpdateQuery = (newQuery) => {
   searchQuery.value = newQuery
 }
 
-// WeatherCard의 select-card 이벤트 처리
+// 선택한 날씨 카드의 도시명을 화면 하단 상태 문구에 반영합니다.
 const handleSelectCard = (weather) => {
-  selectedCityInfo.value =
-    `${weather.name}이 선택되었습니다.`
+  selectedCityInfo.value = `${weather.name}이 선택되었습니다.`
 }
 
-// // WeatherCard의 click-detail 이벤트 처리
-// const handleClickDetail = (weather) => {
-//   window.alert(
-//     `${weather.name}의 현재 날씨는 ` +
-//     `[${weather.status}] 상태이며, ` +
-//     `현재 기온은 ${weather.temp}℃입니다.`,
-//   )
-// }
-// const handleClickDetail = (weather) => {
-//   window.alert(
-//     `${weather.name}의 현재 날씨는 ` +
-//       `[${weather.status}] 상태이며, ` +
-//       `현재 기온은 ${weather.temp}℃입니다.`,
-//   )
-// }
-
-const router = useRouter()
-const configStore = useConfigStore()
-
+// 상세보기 버튼을 누르면 선택한 도시 ID가 포함된 상세 경로로 이동합니다.
 const handleClickDetail = (weather) => {
-  router.push('/weather/' + weather.id)
+  router.push(`/weather/${weather.id}`)
 }
 
+// 카드 선택 전후의 상태 문구를 콘솔에서 비교합니다.
+watch(selectedCityInfo, (newValue, oldValue) => {
+  console.log('✅ [watch / 카드 선택]', {
+    이전상태: oldValue,
+    현재상태: newValue,
+  })
+})
 
+// API 응답으로 날씨 목록이 바뀌면 도시 수와 수신 데이터를 콘솔에 표시합니다.
+watch(weatherList, (newList, oldList) => {
+  console.log('🌦️ [watch / 날씨 API 수신]', {
+    이전도시수: oldList.length,
+    현재도시수: newList.length,
+  })
 
-// 상태바 문구 변경 감시
-watch(
-  selectedCityInfo,
-  (newValue, oldValue) => {
-    console.log('✅ [watch / 카드 선택]', {
-      이전상태: oldValue,
-      현재상태: newValue,
-    })
-  },
-)
+  console.table(
+    newList.map((weather) => ({
+      도시: weather.name,
+      기온: weather.temp,
+      날씨: weather.condition,
+    })),
+  )
+})
 
-// API 데이터 수신 감시
-watch(
-  weatherList,
-  (newList, oldList) => {
-    console.log('🌦️ [watch / 날씨 API 수신]', {
-      이전도시수: oldList.length,
-      현재도시수: newList.length,
-    })
+// API 요청의 시작과 완료 시점을 로딩 상태 변화로 확인합니다.
+watch(loading, (isLoading) => {
+  console.log(`⏳ [watch / API 로딩] ${isLoading ? '요청 시작' : '요청 완료'}`)
+})
 
-    console.table(
-      newList.map((weather) => ({
-        도시: weather.name,
-        기온: weather.temp,
-        날씨: weather.condition,
-      })),
-    )
-  },
-)
-
-// API 로딩 상태 감시
-watch(
-  loading,
-  (isLoading) => {
-    console.log(
-      `⏳ [watch / API 로딩] ${
-        isLoading ? '요청 시작' : '요청 완료'
-      }`,
-    )
-  },
-)
-
-// 섭씨·화씨 단위 변경 감시
+// 섭씨와 화씨 설정이 바뀔 때 이전 단위와 현재 단위를 비교합니다.
 watch(
   () => configStore.unit,
   (newUnit, oldUnit) => {
@@ -149,7 +103,7 @@ watch(
   },
 )
 
-// 검색어와 필터링 결과 자동 감시
+// 검색어나 필터 결과가 바뀌면 watchEffect가 추적한 최신 검색 상태를 출력합니다.
 watchEffect(() => {
   const query = searchQuery.value.trim()
   const resultList = filteredWeatherList.value
@@ -164,38 +118,19 @@ watchEffect(() => {
 
 <template>
   <div class="dashboard-wrapper">
-    
-    <!-- 검색 영역 -->
     <BaseDashboardCard title="🔍 도시 검색">
-      <!-- [props] 부모의 반응형 검색어를 SearchBar의 query prop으로 전달 -->
-      <!-- [emits] SearchBar의 update-query 이벤트를 받아 부모 데이터 변경 -->
-      <SearchBar
-        :query="searchQuery"
-        @update-query="handleUpdateQuery"
-      />
+      <!-- 검색어는 부모가 관리하고 입력 컴포넌트는 변경된 값만 전달합니다. -->
+      <SearchBar :query="searchQuery" @update-query="handleUpdateQuery" />
     </BaseDashboardCard>
 
-    <!-- 날씨 목록 영역 -->
     <BaseDashboardCard title="🏙️ 지역별 날씨 현황">
-      <p
-        v-if="loading"
-        class="loading-message"
-      >
-        날씨 정보를 불러오는 중입니다.
-      </p>
+      <p v-if="loading" class="loading-message">날씨 정보를 불러오는 중입니다.</p>
 
-      <p
-        v-else-if="errorMessage"
-        class="error-message"
-      >
+      <p v-else-if="errorMessage" class="error-message">
         {{ errorMessage }}
       </p>
 
-      <!-- 검색 결과가 있을 때 -->
-      <div
-        v-else-if="filteredWeatherList.length > 0"
-        class="weather-list"
-      >
+      <div v-else-if="filteredWeatherList.length > 0" class="weather-list">
         <WeatherCard
           v-for="item in filteredWeatherList"
           :key="item.id"
@@ -205,15 +140,8 @@ watchEffect(() => {
         />
       </div>
 
-      <!-- 검색 결과가 없을 때 -->
-      <p
-        v-else
-        class="empty-message"
-      >
-        검색 결과와 일치하는 도시가 없습니다.
-      </p>
+      <p v-else class="empty-message">검색 결과와 일치하는 도시가 없습니다.</p>
 
-      <!-- 부모가 관리하는 selectedCityInfo를 BaseDashboardCard의 slot에 주입 -->
       <div class="status-bar">
         {{ selectedCityInfo }}
       </div>
@@ -229,14 +157,6 @@ watchEffect(() => {
   display: flex;
   flex-direction: column;
   gap: 18px;
-}
-
-.dashboard-wrapper > h1 {
-  margin: 4px 0 2px;
-  color: #263238;
-  font-size: 28px;
-  line-height: 1.3;
-  letter-spacing: -0.03em;
 }
 
 .dashboard-wrapper > :deep(.dashboard-card) {
@@ -331,20 +251,20 @@ watchEffect(() => {
   border-radius: 6px;
 }
 
-.weather-list :deep(.very_hot),
-.weather-list :deep(.badge_hot) {
+.weather-list :deep(.very-hot),
+.weather-list :deep(.hot) {
   color: #a12b2b;
   background-color: #fff0f0;
 }
 
-.weather-list :deep(.badge_warm),
-.weather-list :deep(.badge_mild) {
+.weather-list :deep(.warm),
+.weather-list :deep(.mild) {
   color: #8a5a12;
   background-color: #fff7e6;
 }
 
-.weather-list :deep(.badge_cool),
-.weather-list :deep(.very_cold),
+.weather-list :deep(.cool),
+.weather-list :deep(.cold),
 .weather-list :deep(.freezing) {
   color: #28627a;
   background-color: #edf7fb;
@@ -407,10 +327,6 @@ watchEffect(() => {
 @media (max-width: 600px) {
   .dashboard-wrapper {
     gap: 14px;
-  }
-
-  .dashboard-wrapper > h1 {
-    font-size: 23px;
   }
 
   .dashboard-wrapper > :deep(.dashboard-card) {

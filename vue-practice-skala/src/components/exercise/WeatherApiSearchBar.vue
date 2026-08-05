@@ -4,11 +4,8 @@ import { storeToRefs } from 'pinia'
 import { useWeatherSearchStore } from '@/stores/weatherSearchStore'
 
 const weatherSearchStore = useWeatherSearchStore()
-const {
-  citySuggestions,
-  isSuggestionLoading,
-  suggestionErrorMessage,
-} = storeToRefs(weatherSearchStore)
+const { citySuggestions, isSuggestionLoading, suggestionErrorMessage } =
+  storeToRefs(weatherSearchStore)
 
 const props = defineProps({
   initialCity: {
@@ -32,6 +29,7 @@ const hasSuggestionResult = ref(false)
 let debounceTimer = null
 let ignoreNextInputChange = false
 
+// 진행 중인 자동완성 예약을 취소해 이전 입력의 요청이 실행되지 않도록 합니다.
 const clearDebounceTimer = () => {
   if (debounceTimer === null) {
     return
@@ -41,6 +39,7 @@ const clearDebounceTimer = () => {
   debounceTimer = null
 }
 
+// 자동완성 패널과 관련 상태를 한 번에 초기화합니다.
 const closeSuggestions = () => {
   clearDebounceTimer()
   isSuggestionOpen.value = false
@@ -49,6 +48,7 @@ const closeSuggestions = () => {
   weatherSearchStore.clearCitySuggestions()
 }
 
+// 입력이 멈춘 뒤 150ms가 지나면 연관 도시를 요청해 불필요한 API 호출을 줄입니다.
 watch(inputValue, (query) => {
   validationMessage.value = ''
 
@@ -84,6 +84,7 @@ watch(inputValue, (query) => {
   }, 150)
 })
 
+// URL에서 전달된 도시명이 바뀌면 검색창의 값도 같은 이름으로 맞춥니다.
 watch(
   () => props.initialCity,
   (city) => {
@@ -97,12 +98,12 @@ watch(
   { immediate: true },
 )
 
+// 직접 입력한 도시명을 검증한 뒤 부모에 검색을 요청합니다.
 const submitSearch = () => {
   const cityName = inputValue.value.trim()
 
   if (!cityName) {
-    validationMessage.value =
-      '검색할 지역 또는 도시를 입력해 주세요.'
+    validationMessage.value = '검색할 지역 또는 도시를 입력해 주세요.'
     return
   }
 
@@ -117,6 +118,7 @@ const submitSearch = () => {
   emit('search', { name: cityName })
 }
 
+// 자동완성 도시를 선택하면 이름과 좌표를 함께 부모에 전달합니다.
 const selectSuggestion = (city) => {
   if (inputValue.value !== city.name) {
     ignoreNextInputChange = true
@@ -128,17 +130,17 @@ const selectSuggestion = (city) => {
   emit('search', city)
 }
 
+// 입력창에 다시 초점을 맞췄을 때 기존 자동완성 상태가 있으면 패널을 엽니다.
 const handleFocus = () => {
   if (
     inputValue.value.trim().length >= 1 &&
-    (isDebouncing.value ||
-      isSuggestionLoading.value ||
-      hasSuggestionResult.value)
+    (isDebouncing.value || isSuggestionLoading.value || hasSuggestionResult.value)
   ) {
     isSuggestionOpen.value = true
   }
 }
 
+// 한글 조합 중인 값도 v-model에 반영해 완성된 글자부터 검색할 수 있게 합니다.
 const handleComposingInput = (event) => {
   if (!event.isComposing) {
     return
@@ -151,19 +153,15 @@ const handleComposingInput = (event) => {
   }
 }
 
+// 컴포넌트가 사라질 때 남아 있는 타이머와 자동완성 상태를 정리합니다.
 onBeforeUnmount(() => {
   closeSuggestions()
 })
 </script>
 
 <template>
-  <form
-    class="api-search-form"
-    @submit.prevent="submitSearch"
-  >
-    <label for="weather-city-search">
-      지역 또는 도시
-    </label>
+  <form class="api-search-form" @submit.prevent="submitSearch">
+    <label for="weather-city-search"> 지역 또는 도시 </label>
 
     <div class="search-controls">
       <div class="input-wrapper">
@@ -180,18 +178,10 @@ onBeforeUnmount(() => {
           @focus="handleFocus"
           @blur="isSuggestionOpen = false"
           @keydown.esc="isSuggestionOpen = false"
-        >
+        />
 
-        <div
-          v-if="isSuggestionOpen"
-          id="weather-city-suggestions"
-          class="suggestion-panel"
-        >
-          <p
-            v-if="isDebouncing || isSuggestionLoading"
-            class="suggestion-status"
-            role="status"
-          >
+        <div v-if="isSuggestionOpen" id="weather-city-suggestions" class="suggestion-panel">
+          <p v-if="isDebouncing || isSuggestionLoading" class="suggestion-status" role="status">
             연관 도시를 찾는 중입니다.
           </p>
 
@@ -203,15 +193,8 @@ onBeforeUnmount(() => {
             {{ suggestionErrorMessage }}
           </p>
 
-          <ul
-            v-else-if="citySuggestions.length > 0"
-            class="suggestion-list"
-            role="listbox"
-          >
-            <li
-              v-for="city in citySuggestions"
-              :key="city.id"
-            >
+          <ul v-else-if="citySuggestions.length > 0" class="suggestion-list" role="listbox">
+            <li v-for="city in citySuggestions" :key="city.id">
               <button
                 type="button"
                 class="suggestion-item"
@@ -226,29 +209,16 @@ onBeforeUnmount(() => {
             </li>
           </ul>
 
-          <p
-            v-else-if="hasSuggestionResult"
-            class="suggestion-status"
-          >
-            검색 결과가 없습니다.
-          </p>
+          <p v-else-if="hasSuggestionResult" class="suggestion-status">검색 결과가 없습니다.</p>
         </div>
       </div>
 
-      <button
-        type="submit"
-        class="search-button"
-        :disabled="loading"
-      >
+      <button type="submit" class="search-button" :disabled="loading">
         {{ loading ? '검색 중...' : '날씨 검색' }}
       </button>
     </div>
 
-    <p
-      v-if="validationMessage"
-      class="validation-message"
-      role="alert"
-    >
+    <p v-if="validationMessage" class="validation-message" role="alert">
       {{ validationMessage }}
     </p>
   </form>

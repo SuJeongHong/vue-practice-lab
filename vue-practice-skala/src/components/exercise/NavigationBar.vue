@@ -4,16 +4,10 @@ import UnitToggler from './UnitToggler.vue'
 </script>
 
 <template>
-  <nav
-    class="navigation-bar"
-    aria-label="주요 메뉴"
-  >
+  <!-- 주요 화면 이동 링크와 전역 온도 단위 스위치를 공통 메뉴로 제공합니다. -->
+  <nav class="navigation-bar" aria-label="주요 메뉴">
     <div class="navigation-links">
-      <RouterLink
-        to="/"
-        class="navigation-link"
-        exact-active-class="navigation-link--active"
-      >
+      <RouterLink to="/" class="navigation-link" exact-active-class="navigation-link--active">
         <span aria-hidden="true">🌤️</span>
         <span>날씨 대시보드</span>
       </RouterLink>
@@ -27,11 +21,7 @@ import UnitToggler from './UnitToggler.vue'
         <span>날씨 검색</span>
       </RouterLink>
 
-      <RouterLink
-        to="/about"
-        class="navigation-link"
-        exact-active-class="navigation-link--active"
-      >
+      <RouterLink to="/about" class="navigation-link" exact-active-class="navigation-link--active">
         <span aria-hidden="true">ℹ️</span>
         <span>서비스 소개</span>
       </RouterLink>
