@@ -1,11 +1,5 @@
 <script setup>
-import { onBeforeUnmount, ref, watch } from 'vue'
-import { storeToRefs } from 'pinia'
-import { useWeatherSearchStore } from '@/stores/weatherSearchStore'
-
-const weatherSearchStore = useWeatherSearchStore()
-const { citySuggestions, isSuggestionLoading, suggestionErrorMessage } =
-  storeToRefs(weatherSearchStore)
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 const props = defineProps({
   initialCity: {
@@ -16,18 +10,58 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  suggestions: {
+    type: Array,
+    default: () => [],
+  },
+  suggestionLoading: {
+    type: Boolean,
+    default: false,
+  },
+  suggestionErrorMessage: {
+    type: String,
+    default: '',
+  },
+  label: {
+    type: String,
+    default: '지역 또는 도시',
+  },
+  placeholder: {
+    type: String,
+    default: '예: 서울, 제주, Seoul',
+  },
+  submitText: {
+    type: String,
+    default: '날씨 검색',
+  },
+  inputId: {
+    type: String,
+    default: 'location-search',
+  },
+  selectionRequired: {
+    type: Boolean,
+    default: false,
+  },
+  embedded: {
+    type: Boolean,
+    default: false,
+  },
 })
 
-const emit = defineEmits(['search'])
+const emit = defineEmits(['search', 'request-suggestions', 'clear-suggestions'])
 
 const inputValue = ref('')
 const validationMessage = ref('')
 const isSuggestionOpen = ref(false)
 const isDebouncing = ref(false)
 const hasSuggestionResult = ref(false)
-
 let debounceTimer = null
 let ignoreNextInputChange = false
+
+const suggestionPanelId = computed(() => `${props.inputId}-suggestions`)
+const isSubmitLoading = computed(
+  () => props.loading || (props.selectionRequired && props.suggestionLoading),
+)
 
 // 진행 중인 자동완성 예약을 취소해 이전 입력의 요청이 실행되지 않도록 합니다.
 const clearDebounceTimer = () => {
@@ -39,16 +73,16 @@ const clearDebounceTimer = () => {
   debounceTimer = null
 }
 
-// 자동완성 패널과 관련 상태를 한 번에 초기화합니다.
+// 자동완성 패널과 관련 상태를 초기화하고 부모의 후보 데이터도 비웁니다.
 const closeSuggestions = () => {
   clearDebounceTimer()
   isSuggestionOpen.value = false
   isDebouncing.value = false
   hasSuggestionResult.value = false
-  weatherSearchStore.clearCitySuggestions()
+  emit('clear-suggestions')
 }
 
-// 입력이 멈춘 뒤 150ms가 지나면 연관 도시를 요청해 불필요한 API 호출을 줄입니다.
+// 공백을 제외한 검색어가 1글자 이상이면 150ms 뒤 부모에 후보 조회를 요청합니다.
 watch(inputValue, (query) => {
   validationMessage.value = ''
 
@@ -58,7 +92,7 @@ watch(inputValue, (query) => {
   }
 
   clearDebounceTimer()
-  weatherSearchStore.clearCitySuggestions()
+  emit('clear-suggestions')
   hasSuggestionResult.value = false
 
   const trimmedQuery = query.trim()
@@ -72,19 +106,15 @@ watch(inputValue, (query) => {
   isSuggestionOpen.value = true
   isDebouncing.value = true
 
-  debounceTimer = window.setTimeout(async () => {
+  debounceTimer = window.setTimeout(() => {
     debounceTimer = null
     isDebouncing.value = false
-
-    await weatherSearchStore.fetchCitySuggestions(trimmedQuery)
-
-    if (inputValue.value.trim() === trimmedQuery) {
-      hasSuggestionResult.value = true
-    }
+    hasSuggestionResult.value = true
+    emit('request-suggestions', trimmedQuery)
   }, 150)
 })
 
-// URL에서 전달된 도시명이 바뀌면 검색창의 값도 같은 이름으로 맞춥니다.
+// URL에서 전달된 초기 지역명이 바뀌면 입력창도 같은 이름으로 맞춥니다.
 watch(
   () => props.initialCity,
   (city) => {
@@ -98,7 +128,7 @@ watch(
   { immediate: true },
 )
 
-// 직접 입력한 도시명을 검증한 뒤 부모에 검색을 요청합니다.
+// 일반 검색은 입력값을 전달하고 선택이 필수인 화면은 후보 검색만 즉시 실행합니다.
 const submitSearch = () => {
   const cityName = inputValue.value.trim()
 
@@ -114,27 +144,43 @@ const submitSearch = () => {
     inputValue.value = cityName
   }
 
+  if (props.selectionRequired) {
+    clearDebounceTimer()
+    emit('clear-suggestions')
+    isSuggestionOpen.value = true
+    isDebouncing.value = false
+    hasSuggestionResult.value = true
+    emit('request-suggestions', cityName)
+    return
+  }
+
   closeSuggestions()
   emit('search', { name: cityName })
 }
 
-// 자동완성 도시를 선택하면 이름과 좌표를 함께 부모에 전달합니다.
-const selectSuggestion = (city) => {
-  if (inputValue.value !== city.name) {
+// 자동완성 후보를 선택하면 이름과 좌표를 함께 부모에 전달합니다.
+const selectSuggestion = (location) => {
+  if (inputValue.value !== location.name) {
     ignoreNextInputChange = true
-    inputValue.value = city.name
+    inputValue.value = location.name
   }
 
   validationMessage.value = ''
   closeSuggestions()
-  emit('search', city)
+  emit('search', location)
 }
 
-// 입력창에 다시 초점을 맞췄을 때 기존 자동완성 상태가 있으면 패널을 엽니다.
+const getSuggestionArea = (location) =>
+  [location.state || location.admin1, location.country].filter(Boolean).join(', ')
+
+// 입력창에 다시 초점을 맞추면 진행했거나 완료한 자동완성 패널을 다시 엽니다.
 const handleFocus = () => {
   if (
     inputValue.value.trim().length >= 1 &&
-    (isDebouncing.value || isSuggestionLoading.value || hasSuggestionResult.value)
+    (isDebouncing.value ||
+      props.suggestionLoading ||
+      hasSuggestionResult.value ||
+      props.suggestions.length > 0)
   ) {
     isSuggestionOpen.value = true
   }
@@ -153,36 +199,39 @@ const handleComposingInput = (event) => {
   }
 }
 
-// 컴포넌트가 사라질 때 남아 있는 타이머와 자동완성 상태를 정리합니다.
 onBeforeUnmount(() => {
   closeSuggestions()
 })
 </script>
 
 <template>
-  <form class="api-search-form" @submit.prevent="submitSearch">
-    <label for="weather-city-search"> 지역 또는 도시 </label>
+  <form
+    class="location-search-form"
+    :class="{ 'location-search-form--embedded': embedded }"
+    @submit.prevent="submitSearch"
+  >
+    <label :for="inputId">{{ label }}</label>
 
     <div class="search-controls">
       <div class="input-wrapper">
         <input
-          id="weather-city-search"
+          :id="inputId"
           v-model="inputValue"
           type="search"
-          placeholder="예: 서울, 제주, Seoul"
+          :placeholder="placeholder"
           autocomplete="off"
           :disabled="loading"
           :aria-expanded="isSuggestionOpen"
-          aria-controls="weather-city-suggestions"
+          :aria-controls="suggestionPanelId"
           @input="handleComposingInput"
           @focus="handleFocus"
           @blur="isSuggestionOpen = false"
           @keydown.esc="isSuggestionOpen = false"
         />
 
-        <div v-if="isSuggestionOpen" id="weather-city-suggestions" class="suggestion-panel">
-          <p v-if="isDebouncing || isSuggestionLoading" class="suggestion-status" role="status">
-            연관 도시를 찾는 중입니다.
+        <div v-if="isSuggestionOpen" :id="suggestionPanelId" class="suggestion-panel">
+          <p v-if="isDebouncing || suggestionLoading" class="suggestion-status" role="status">
+            연관 지역을 찾는 중입니다.
           </p>
 
           <p
@@ -193,18 +242,16 @@ onBeforeUnmount(() => {
             {{ suggestionErrorMessage }}
           </p>
 
-          <ul v-else-if="citySuggestions.length > 0" class="suggestion-list" role="listbox">
-            <li v-for="city in citySuggestions" :key="city.id">
+          <ul v-else-if="suggestions.length > 0" class="suggestion-list" role="listbox">
+            <li v-for="location in suggestions" :key="location.id">
               <button
                 type="button"
                 class="suggestion-item"
                 role="option"
-                @mousedown.prevent="selectSuggestion(city)"
+                @mousedown.prevent="selectSuggestion(location)"
               >
-                <strong>{{ city.name }}</strong>
-                <small>
-                  {{ [city.state, city.country].filter(Boolean).join(', ') }}
-                </small>
+                <strong>{{ location.name }}</strong>
+                <small>{{ getSuggestionArea(location) }}</small>
               </button>
             </li>
           </ul>
@@ -213,8 +260,8 @@ onBeforeUnmount(() => {
         </div>
       </div>
 
-      <button type="submit" class="search-button" :disabled="loading">
-        {{ loading ? '검색 중...' : '날씨 검색' }}
+      <button type="submit" class="search-button" :disabled="isSubmitLoading">
+        {{ isSubmitLoading ? '검색 중...' : submitText }}
       </button>
     </div>
 
@@ -225,12 +272,19 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.api-search-form {
+.location-search-form {
   padding: 20px;
   background-color: #ffffff;
   border: 1px solid #e0e8ec;
   border-radius: 12px;
   box-shadow: 0 4px 14px rgba(39, 55, 64, 0.06);
+}
+
+.location-search-form--embedded {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 label {
@@ -313,6 +367,7 @@ input:focus {
 .suggestion-item small {
   color: #78909c;
   font-size: 12px;
+  text-align: right;
 }
 
 .suggestion-status {

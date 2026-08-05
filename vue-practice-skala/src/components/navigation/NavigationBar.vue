@@ -21,6 +21,15 @@ import UnitToggler from './UnitToggler.vue'
         <span>날씨 검색</span>
       </RouterLink>
 
+      <RouterLink
+        to="/life-weather-planner"
+        class="navigation-link"
+        exact-active-class="navigation-link--active"
+      >
+        <span aria-hidden="true">📅</span>
+        <span>생활 날씨 플래너</span>
+      </RouterLink>
+
       <RouterLink to="/about" class="navigation-link" exact-active-class="navigation-link--active">
         <span aria-hidden="true">ℹ️</span>
         <span>서비스 소개</span>
@@ -34,7 +43,7 @@ import UnitToggler from './UnitToggler.vue'
 <style scoped>
 .navigation-bar {
   width: 100%;
-  max-width: 800px;
+  max-width: 900px;
   box-sizing: border-box;
 
   display: flex;
@@ -54,6 +63,7 @@ import UnitToggler from './UnitToggler.vue'
 .navigation-links {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   padding: 5px;
 

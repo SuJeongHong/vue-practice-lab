@@ -3,15 +3,23 @@ import { computed, watch } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
 
-import WeatherApiSearchBar from '@/components/exercise/WeatherApiSearchBar.vue'
-import WeatherSearchResultList from '@/components/exercise/WeatherSearchResultList.vue'
+import LocationSearchBar from '@/components/weather/LocationSearchBar.vue'
+import WeatherSearchResultList from '@/components/weather/WeatherSearchResultList.vue'
 import { useWeatherSearchStore } from '@/stores/weatherSearchStore'
 
 const route = useRoute()
 const router = useRouter()
 const weatherSearchStore = useWeatherSearchStore()
 
-const { searchResults, isLoading, errorMessage, resultCount } = storeToRefs(weatherSearchStore)
+const {
+  searchResults,
+  isLoading,
+  errorMessage,
+  resultCount,
+  citySuggestions,
+  isSuggestionLoading,
+  suggestionErrorMessage,
+} = storeToRefs(weatherSearchStore)
 
 const routeCity = computed(() => {
   const city = Array.isArray(route.query.city) ? route.query.city[0] : route.query.city
@@ -101,7 +109,17 @@ const handleClearAll = () => {
       <p>원하는 지역이나 도시를 검색하고 최근 날씨를 저장해 보세요.</p>
     </header>
 
-    <WeatherApiSearchBar :initial-city="routeCity" :loading="isLoading" @search="handleSearch" />
+    <LocationSearchBar
+      input-id="weather-city-search"
+      :initial-city="routeCity"
+      :loading="isLoading"
+      :suggestions="citySuggestions"
+      :suggestion-loading="isSuggestionLoading"
+      :suggestion-error-message="suggestionErrorMessage"
+      @request-suggestions="weatherSearchStore.fetchCitySuggestions"
+      @clear-suggestions="weatherSearchStore.clearCitySuggestions"
+      @search="handleSearch"
+    />
 
     <p v-if="isLoading" class="status-message loading-message" role="status">
       날씨 정보를 불러오는 중입니다.

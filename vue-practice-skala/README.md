@@ -28,21 +28,31 @@ Vue 3 강의에서 학습한 반응형 상태, 컴포넌트 통신, Vue Router, 
 - 검색 결과는 중복 도시를 제거한 뒤 최신순으로 최대 10개까지 저장합니다.
 - 개별 삭제와 전체 삭제를 지원하며, `localStorage`를 이용해 새로고침 후에도 결과를 유지합니다.
 
-### 4. 전역 온도 단위 변경
+### 4. 생활 날씨 플래너
+
+- Open-Meteo Geocoding API로 연관 지역을 최대 5개까지 검색합니다.
+- 선택 지역의 이름과 좌표를 URL 쿼리와 `localStorage`에 저장합니다.
+- 날씨와 대기질 API를 `Promise.all()`로 동시에 호출하고 같은 지역의 결과를 10분간 캐싱합니다.
+- 현재 날씨와 7일 예보, PM10·PM2.5 일평균을 달력형 카드로 표시합니다.
+- 강수 확률, 기온, 미세먼지에 따라 옷차림·우산·마스크·빨래·야외활동 조언을 계산합니다.
+- 대기질 값이 제공되지 않는 날짜는 임의 값 대신 `예보 없음`으로 표시합니다.
+
+### 5. 전역 온도 단위 변경
 
 - 내비게이션의 버튼으로 섭씨와 화씨를 전환합니다.
 - Pinia의 `configStore`에서 단위를 전역 관리하므로 메인, 상세, 검색 결과 화면이 함께 갱신됩니다.
 - 원본 기온은 섭씨로 유지하고 `computed()`에서 화면 표시값만 변환합니다.
 
-### 5. SPA 라우팅과 예외 화면
+### 6. SPA 라우팅과 예외 화면
 
-| 경로               | 화면                    | 역할                          |
-| ------------------ | ----------------------- | ----------------------------- |
-| `/`                | `WeatherHomeview.vue`   | 국내 주요 도시 대시보드       |
-| `/weather/:cityId` | `WeatherDetailView.vue` | 도시별 상세 날씨              |
-| `/weather-search`  | `WeatherSearchView.vue` | 도시 검색 및 결과 저장        |
-| `/about`           | `WeatherAboutView.vue`  | 서비스 소개                   |
-| `/:pathMatch(.*)*` | `NotFoundView.vue`      | 정의되지 않은 주소의 404 화면 |
+| 경로                    | 화면                         | 역할                          |
+| ----------------------- | ---------------------------- | ----------------------------- |
+| `/`                     | `WeatherHomeview.vue`        | 국내 주요 도시 대시보드       |
+| `/weather/:cityId`      | `WeatherDetailView.vue`      | 도시별 상세 날씨              |
+| `/weather-search`       | `WeatherSearchView.vue`      | 도시 검색 및 결과 저장        |
+| `/life-weather-planner` | `LifeWeatherPlannerView.vue` | 생활 날씨와 7일 대기질 플래너 |
+| `/about`                | `WeatherAboutView.vue`       | 서비스 소개                   |
+| `/:pathMatch(.*)*`      | `NotFoundView.vue`           | 정의되지 않은 주소의 404 화면 |
 
 모든 View는 동적 `import()`로 불러와 라우트 단위 지연 로딩을 적용했습니다.
 
@@ -54,8 +64,8 @@ Vue 3 강의에서 학습한 반응형 상태, 컴포넌트 통신, Vue Router, 
 | Build Tool  | Vite                     | 개발 서버, HMR, 번들링, 환경 변수 로드                    |
 | Routing     | Vue Router               | SPA 화면 전환, 동적 경로, 쿼리 스트링, 404 처리           |
 | State       | Pinia                    | 온도 단위, 검색 결과, 날씨·자동완성 로딩과 오류 상태 관리 |
-| HTTP        | Axios                    | OpenWeather Geocoding 및 Current Weather API 호출         |
-| Persistence | Web Storage API          | 최근 검색 결과를 `localStorage`에 저장                    |
+| HTTP        | Axios                    | OpenWeather와 Open-Meteo 날씨·대기질 API 호출             |
+| Persistence | Web Storage API          | 최근 검색 결과와 마지막 선택 지역을 `localStorage`에 저장 |
 | Quality     | ESLint, Oxlint, Prettier | 코드 정적 분석과 포맷팅                                   |
 
 ## 프로젝트 구조
@@ -66,26 +76,31 @@ vue-practice-skala/
 ├── src/
 │   ├── api/
 │   │   └── weatherApi.js         # 등록 도시의 OpenWeather API 요청과 응답 가공
-│   ├── components/exercise/
-│   │   ├── BaseDashboardCard.vue # 기본 슬롯을 제공하는 공통 카드 레이아웃
-│   │   ├── NavigationBar.vue     # RouterLink 메뉴와 단위 토글 배치
-│   │   ├── SearchBar.vue         # 국내 도시 필터 입력, Props/Emits 실습
-│   │   ├── UnitToggler.vue       # Pinia 전역 온도 단위 변경
-│   │   ├── WeatherApiSearchBar.vue
-│   │   │                         # API 도시 검색, 자동완성, 입력 검증
-│   │   ├── WeatherCard.vue       # 도시 요약 카드와 상세 이동 이벤트
-│   │   ├── WeatherSearchResultCard.vue
-│   │   │                         # 검색 결과 한 건 표시 및 삭제 이벤트
-│   │   └── WeatherSearchResultList.vue
-│   │                             # 검색 결과 목록과 전체 삭제 이벤트
+│   ├── components/
+│   │   ├── dashboard/
+│   │   │   ├── BaseDashboardCard.vue # 공통 대시보드 카드 레이아웃
+│   │   │   └── SearchBar.vue         # 국내 도시 필터 입력
+│   │   ├── navigation/
+│   │   │   ├── NavigationBar.vue     # 화면 이동 메뉴
+│   │   │   └── UnitToggler.vue       # 전역 온도 단위 변경
+│   │   └── weather/
+│   │       ├── LocationSearchBar.vue # 두 검색 화면의 공통 자동완성
+│   │       ├── WeatherCard.vue       # 도시 요약 카드
+│   │       ├── WeatherSearchResultCard.vue
+│   │       │                         # 검색 결과 한 건 표시
+│   │       └── WeatherSearchResultList.vue
+│   │                                 # 검색 결과 목록 관리
 │   ├── data/
 │   │   └── cities.js             # 국내 10개 도시의 ID와 위·경도
 │   ├── router/
 │   │   └── index.js              # 경로, Lazy Loading, 동적 Route, 404 설정
 │   ├── stores/
 │   │   ├── configStore.js        # 섭씨·화씨 상태와 단위 기호 Getter
-│   │   ├── weatherSearchStore.js # 검색 API, 결과·상태 관리, localStorage 동기화
+│   │   ├── lifeWeatherStore.js   # 생활 날씨·대기질, 지역 저장, 10분 캐시
+│   │   └── weatherSearchStore.js # 검색 API, 결과·상태 관리, localStorage 동기화
 │   ├── views/
+│   │   ├── LifeWeatherPlannerView.vue
+│   │   │                         # 지역 기반 생활 조언과 7일 날씨 달력
 │   │   ├── WeatherHomeview.vue   # 메인 날씨 대시보드
 │   │   ├── WeatherDetailView.vue # 동적 도시 상세 페이지
 │   │   ├── WeatherSearchView.vue # 도시 검색 페이지
@@ -129,7 +144,7 @@ WeatherHomeview의 onMounted
 ### 도시 검색과 저장
 
 ```text
-WeatherApiSearchBar의 검색어 watch
+LocationSearchBar의 검색어 watch
   → 1글자 이상 입력 시 150ms 디바운스
   → Pinia fetchCitySuggestions()
   → Geocoding API 자동완성 결과 최대 5개 표시
@@ -162,16 +177,16 @@ WeatherApiSearchBar의 검색어 watch
 
 이 프로젝트에서는 값의 변화를 관찰한 뒤 후속 작업이 필요한 경우에 사용했습니다.
 
-| 파일                      | 감시 대상           | 동작                                                        |
-| ------------------------- | ------------------- | ----------------------------------------------------------- |
-| `WeatherHomeview.vue`     | `selectedCityInfo`  | 카드 선택 전후 상태를 콘솔에 기록                           |
-| `WeatherHomeview.vue`     | `weatherList`       | API 수신 전후 도시 수와 결과를 콘솔에 기록                  |
-| `WeatherHomeview.vue`     | `loading`           | API 요청 시작·완료 상태를 콘솔에 기록                       |
-| `WeatherHomeview.vue`     | `configStore.unit`  | 섭씨·화씨 변경 전후 값을 콘솔에 기록                        |
-| `WeatherHomeview.vue`     | 검색어와 필터 결과  | `watchEffect()`로 최신 검색 상태를 콘솔에 기록              |
-| `WeatherApiSearchBar.vue` | `inputValue`        | 150ms 디바운스 후 도시 자동완성 API 요청                    |
-| `WeatherApiSearchBar.vue` | `props.initialCity` | URL에서 받은 초기 도시를 입력창에 즉시 반영 (`immediate`)   |
-| `WeatherSearchView.vue`   | `route.fullPath`    | 도시·좌표 쿼리가 바뀌면 날씨 검색 Action 실행 (`immediate`) |
+| 파일                    | 감시 대상           | 동작                                                        |
+| ----------------------- | ------------------- | ----------------------------------------------------------- |
+| `WeatherHomeview.vue`   | `selectedCityInfo`  | 카드 선택 전후 상태를 콘솔에 기록                           |
+| `WeatherHomeview.vue`   | `weatherList`       | API 수신 전후 도시 수와 결과를 콘솔에 기록                  |
+| `WeatherHomeview.vue`   | `loading`           | API 요청 시작·완료 상태를 콘솔에 기록                       |
+| `WeatherHomeview.vue`   | `configStore.unit`  | 섭씨·화씨 변경 전후 값을 콘솔에 기록                        |
+| `WeatherHomeview.vue`   | 검색어와 필터 결과  | `watchEffect()`로 최신 검색 상태를 콘솔에 기록              |
+| `LocationSearchBar.vue` | `inputValue`        | 150ms 디바운스 후 지역 자동완성 API 요청                    |
+| `LocationSearchBar.vue` | `props.initialCity` | URL에서 받은 초기 도시를 입력창에 즉시 반영 (`immediate`)   |
+| `WeatherSearchView.vue` | `route.fullPath`    | 도시·좌표 쿼리가 바뀌면 날씨 검색 Action 실행 (`immediate`) |
 
 - `watch()`는 감시 대상을 명시하고 `newValue`, `oldValue`를 이용하거나 API 호출 같은 후속 작업을 실행할 때 적합합니다.
 - `watchEffect()`는 함수 안에서 사용된 반응형 값을 자동 추적하며 최초에도 즉시 실행됩니다.
@@ -180,12 +195,12 @@ WeatherApiSearchBar의 검색어 watch
 
 Vue의 단방향 데이터 흐름에 맞춰 부모는 Props로 데이터를 전달하고, 자식은 Emits로 사용자 동작을 알립니다.
 
-| 부모 → 자식 Props                      | 자식 → 부모 Emits             |
-| -------------------------------------- | ----------------------------- |
-| `SearchBar`: `query`                   | `update-query`                |
-| `WeatherCard`: `weather`               | `select-card`, `click-detail` |
-| `WeatherApiSearchBar`: 초기 도시, 로딩 | `search`                      |
-| `WeatherSearchResultCard`: `weather`   | `remove`                      |
+| 부모 → 자식 Props                          | 자식 → 부모 Emits               |
+| ------------------------------------------ | ------------------------------- |
+| `SearchBar`: `query`                       | `update-query`                  |
+| `WeatherCard`: `weather`                   | `select-card`, `click-detail`   |
+| `LocationSearchBar`: 초기 도시, 후보, 로딩 | `search`, `request-suggestions` |
+| `WeatherSearchResultCard`: `weather`       | `remove`                        |
 
 `BaseDashboardCard.vue`는 기본 `<slot />`을 제공해 카드의 공통 레이아웃은 재사용하고, 검색 영역과 날씨 목록처럼 서로 다른 콘텐츠는 부모에서 주입합니다.
 
@@ -210,6 +225,13 @@ Options Store 방식으로 작성했습니다.
 - Persistence: Store 초기화 시 `localStorage`를 읽고 변경 시 다시 저장
 
 `WeatherSearchView.vue`에서는 `storeToRefs()`로 State와 Getter를 구조 분해해도 반응성이 유지되도록 했고, Action은 Store 인스턴스를 통해 호출합니다.
+
+#### `lifeWeatherStore`
+
+- State: 선택 지역, 현재 날씨, 7일 예보, 자동완성, 로딩과 오류, 좌표별 캐시
+- Actions: 지역 검색, 선택 지역 저장, 날씨·대기질 병렬 조회
+- Persistence: 마지막 선택 지역을 `localStorage`에 저장
+- Cache: 같은 좌표의 API 결과를 메모리에서 10분간 재사용
 
 ### Vue Router
 

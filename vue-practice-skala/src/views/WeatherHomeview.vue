@@ -2,9 +2,9 @@
 import { computed, onMounted, ref, watch, watchEffect } from 'vue'
 import { useRouter } from 'vue-router'
 
-import BaseDashboardCard from '@/components/exercise/BaseDashboardCard.vue'
-import SearchBar from '@/components/exercise/SearchBar.vue'
-import WeatherCard from '@/components/exercise/WeatherCard.vue'
+import BaseDashboardCard from '@/components/dashboard/BaseDashboardCard.vue'
+import SearchBar from '@/components/dashboard/SearchBar.vue'
+import WeatherCard from '@/components/weather/WeatherCard.vue'
 import { fetchAllWeather } from '@/api/weatherApi'
 import { useConfigStore } from '@/stores/configStore'
 
