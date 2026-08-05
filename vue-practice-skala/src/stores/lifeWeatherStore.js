@@ -69,7 +69,7 @@ const saveSelectedLocation = (location) => {
   }
 }
 
-// WMO 날씨 코드를 화면에 표시할 한국어 문구와 아이콘으로 변환합니다.
+// includes()로 여러 WMO 코드 중 현재 날씨 코드가 포함되는지 확인합니다.
 const getWeatherCondition = (weatherCode) => {
   const code = Number(weatherCode)
 
@@ -108,12 +108,17 @@ const getAverage = (values) => {
 // 시간별 미세먼지 값을 날짜별 일평균으로 묶고 없는 값은 null로 유지합니다.
 const groupDailyAirQuality = (hourly = {}) => {
   const groupedValues = {}
-  const hourlyTimes = hourly.time ?? []
+  const safeHourly = hourly ?? {}
+  const hourlyTimes = Array.isArray(safeHourly.time) ? safeHourly.time : []
 
   hourlyTimes.forEach((time, index) => {
+    if (typeof time !== 'string') {
+      return
+    }
+
     const date = time.slice(0, 10)
-    const pm10 = toNullableNumber(hourly.pm10?.[index])
-    const pm2_5 = toNullableNumber(hourly.pm2_5?.[index])
+    const pm10 = toNullableNumber(safeHourly.pm10?.[index])
+    const pm2_5 = toNullableNumber(safeHourly.pm2_5?.[index])
 
     if (!groupedValues[date]) {
       groupedValues[date] = { pm10: [], pm2_5: [] }
@@ -191,7 +196,8 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
           return []
         }
 
-        const suggestions = (response.data.results ?? []).slice(0, 5).map((location) => ({
+        const locations = Array.isArray(response.data?.results) ? response.data.results : []
+        const suggestions = locations.slice(0, 5).map((location) => ({
           id: location.id,
           name: location.name,
           admin1: location.admin1 ?? '',
@@ -226,7 +232,7 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
       this.locationErrorMessage = ''
     },
 
-    // 날씨와 대기질을 동시에 조회하고 같은 좌표의 결과는 10분간 재사용합니다.
+    // Promise.all()로 날씨와 대기질을 동시에 조회하고 같은 좌표의 결과는 10분간 재사용합니다.
     async fetchPlanner(locationInput = this.selectedLocation, options = {}) {
       if (!isValidLocation(locationInput)) {
         this.errorMessage = '날씨를 확인할 지역을 먼저 선택해 주세요.'
@@ -281,8 +287,8 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
           return null
         }
 
-        const weatherData = weatherResponse.data
-        const airQualityByDate = groupDailyAirQuality(airQualityResponse.data.hourly)
+        const weatherData = weatherResponse.data ?? {}
+        const airQualityByDate = groupDailyAirQuality(airQualityResponse.data?.hourly)
         const currentCondition = getWeatherCondition(weatherData.current?.weather_code)
         const currentWeather = {
           temp: toNullableNumber(weatherData.current?.temperature_2m),
@@ -291,7 +297,8 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
           condition: currentCondition.label,
           conditionIcon: currentCondition.icon,
         }
-        const dailyForecast = (weatherData.daily?.time ?? []).slice(0, 7).map((date, index) => {
+        const dailyTimes = Array.isArray(weatherData.daily?.time) ? weatherData.daily.time : []
+        const dailyForecast = dailyTimes.slice(0, 7).map((date, index) => {
           const condition = getWeatherCondition(weatherData.daily.weather_code?.[index])
           const airQuality = airQualityByDate[date] ?? { pm10: null, pm2_5: null }
 

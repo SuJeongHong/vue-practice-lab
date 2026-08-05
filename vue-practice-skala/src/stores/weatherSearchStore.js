@@ -10,6 +10,7 @@ let latestSuggestionRequestId = 0
 
 const getApiKey = () => import.meta.env.VITE_OPENWEATHER_API_KEY?.trim()
 
+// Optional Chaining과 ??로 한글명이 없는 지역도 원래 이름을 안전하게 사용합니다.
 const getKoreanLocationName = (location) => location.local_names?.ko ?? location.name
 
 // Geocoding API 응답에서 자동완성에 필요한 도시 정보만 추립니다.
@@ -103,7 +104,8 @@ export const useWeatherSearchStore = defineStore('weatherSearch', {
           return []
         }
 
-        const suggestions = response.data.map(toCitySuggestion)
+        const locations = Array.isArray(response.data) ? response.data : []
+        const suggestions = locations.map(toCitySuggestion)
         this.citySuggestions = suggestions
 
         return suggestions
@@ -181,7 +183,8 @@ export const useWeatherSearchStore = defineStore('weatherSearch', {
             },
           })
 
-          location = geocodingResponse.data[0]
+          const locations = Array.isArray(geocodingResponse.data) ? geocodingResponse.data : []
+          location = locations[0]
         }
 
         if (!location) {
@@ -200,14 +203,20 @@ export const useWeatherSearchStore = defineStore('weatherSearch', {
         })
 
         const data = response.data
+        const main = data?.main
+
+        if (!main) {
+          throw new Error('현재 날씨 응답 형식이 올바르지 않습니다.')
+        }
+
         const weather = {
           id: data.id,
           name: getKoreanLocationName(location),
           country: data.sys?.country ?? '',
-          temp: data.main.temp,
-          feelsLike: data.main.feels_like,
+          temp: main.temp,
+          feelsLike: main.feels_like,
           description: data.weather?.[0]?.description ?? '정보 없음',
-          humidity: data.main.humidity,
+          humidity: main.humidity,
           icon: data.weather?.[0]?.icon ?? '',
           searchedAt: new Date().toISOString(),
         }
@@ -236,7 +245,7 @@ export const useWeatherSearchStore = defineStore('weatherSearch', {
       }
     },
 
-    // 같은 도시는 최신 결과로 교체하고 전체 목록은 최근 10개까지만 유지합니다.
+    // Spread로 원본 목록을 보존하면서 최신 결과를 앞에 결합하고 10개까지만 유지합니다.
     addSearchResult(weather) {
       const weatherId = String(weather.id)
       const remainingResults = this.searchResults.filter(

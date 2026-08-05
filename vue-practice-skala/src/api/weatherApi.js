@@ -45,7 +45,7 @@ const fetchCurrentWeather = async (city) => {
     throw new Error('.env.local에 VITE_OPENWEATHER_API_KEY를 입력해 주세요.')
   }
 
-  const response = await axios.get(CURRENT_WEATHER_API_URL, {
+  const { data } = await axios.get(CURRENT_WEATHER_API_URL, {
     params: {
       lat: city.lat,
       lon: city.lon,
@@ -55,8 +55,14 @@ const fetchCurrentWeather = async (city) => {
     },
   })
 
-  const data = response.data
-  const weatherMain = data.weather[0]?.main
+  // 구조분해로 API 객체와 날씨 배열에서 필요한 값을 꺼내고, 없는 배열 값에는 기본 객체를 사용합니다.
+  const { main, wind, weather = [] } = data ?? {}
+  const [{ main: weatherMain } = {}] = Array.isArray(weather) ? weather : []
+
+  if (!main || !wind) {
+    throw new Error(`${city.name}의 날씨 응답 형식이 올바르지 않습니다.`)
+  }
+
   const condition = weatherConditionMap[weatherMain] ?? {
     label: '기타',
     icon: '🌤️',
@@ -65,9 +71,9 @@ const fetchCurrentWeather = async (city) => {
   return {
     id: city.id,
     name: city.name,
-    temp: Math.round(data.main.temp),
-    humidity: data.main.humidity,
-    windSpeed: data.wind.speed,
+    temp: Math.round(main.temp),
+    humidity: main.humidity,
+    windSpeed: wind.speed,
     condition: condition.label,
     conditionIcon: condition.icon,
   }
