@@ -6,7 +6,7 @@ Vue 3 강의에서 학습한 반응형 상태, 컴포넌트 통신, Vue Router, 
 
 ### 1. 국내 주요 도시 날씨 대시보드
 
-- 서울, 수원, 부산 등 10개 도시의 현재 날씨를 한 번에 조회합니다.
+- 서울, 춘천, 강릉, 부산, 제주 등 전국 주요 12개 도시의 현재 날씨를 한 번에 조회합니다.
 - 도시명 입력에 따라 목록을 실시간으로 필터링합니다.
 - 기온에 따라 폭염, 더움, 선선함, 한파 등의 상태 배지를 표시합니다.
 - 카드를 선택하면 선택 상태를 표시하고, `상세보기`를 누르면 도시별 상세 페이지로 이동합니다.
@@ -30,10 +30,10 @@ Vue 3 강의에서 학습한 반응형 상태, 컴포넌트 통신, Vue Router, 
 
 ### 4. 생활 날씨 플래너
 
-- Open-Meteo Geocoding API로 연관 지역을 최대 5개까지 검색합니다.
+- OpenWeather Geocoding API로 연관 지역을 최대 5개까지 검색합니다.
 - 선택 지역의 이름과 좌표를 URL 쿼리와 `localStorage`에 저장합니다.
-- 날씨와 대기질 API를 `Promise.all()`로 동시에 호출하고 같은 지역의 결과를 10분간 캐싱합니다.
-- 현재 날씨와 7일 예보, PM10·PM2.5 일평균을 달력형 카드로 표시합니다.
+- 현재 날씨·5일 예보·대기질 API를 `Promise.allSettled()`로 동시에 호출하고 같은 지역의 결과를 10분간 캐싱합니다.
+- 현재 날씨와 5일 예보, PM10·PM2.5 일평균을 달력형 카드로 표시합니다.
 - 강수 확률, 기온, 미세먼지에 따라 옷차림·우산·마스크·빨래·야외활동 조언을 계산합니다.
 - 대기질 값이 제공되지 않는 날짜는 임의 값 대신 `예보 없음`으로 표시합니다.
 
@@ -50,7 +50,7 @@ Vue 3 강의에서 학습한 반응형 상태, 컴포넌트 통신, Vue Router, 
 | `/`                     | `WeatherHomeview.vue`        | 국내 주요 도시 대시보드       |
 | `/weather/:cityId`      | `WeatherDetailView.vue`      | 도시별 상세 날씨              |
 | `/weather-search`       | `WeatherSearchView.vue`      | 도시 검색 및 결과 저장        |
-| `/life-weather-planner` | `LifeWeatherPlannerView.vue` | 생활 날씨와 7일 대기질 플래너 |
+| `/life-weather-planner` | `LifeWeatherPlannerView.vue` | 생활 날씨와 5일 대기질 플래너 |
 | `/about`                | `WeatherAboutView.vue`       | 서비스 소개                   |
 | `/:pathMatch(.*)*`      | `NotFoundView.vue`           | 정의되지 않은 주소의 404 화면 |
 
@@ -64,7 +64,7 @@ Vue 3 강의에서 학습한 반응형 상태, 컴포넌트 통신, Vue Router, 
 | Build Tool  | Vite                     | 개발 서버, HMR, 번들링, 환경 변수 로드                    |
 | Routing     | Vue Router               | SPA 화면 전환, 동적 경로, 쿼리 스트링, 404 처리           |
 | State       | Pinia                    | 온도 단위, 검색 결과, 날씨·자동완성 로딩과 오류 상태 관리 |
-| HTTP        | Axios                    | OpenWeather와 Open-Meteo 날씨·대기질 API 호출             |
+| HTTP        | Axios                    | OpenWeather 날씨·예보·대기질 API 호출                     |
 | Persistence | Web Storage API          | 최근 검색 결과와 마지막 선택 지역을 `localStorage`에 저장 |
 | Quality     | ESLint, Oxlint, Prettier | 코드 정적 분석과 포맷팅                                   |
 
@@ -91,7 +91,7 @@ vue-practice-skala/
 │   │       └── WeatherSearchResultList.vue
 │   │                                 # 검색 결과 목록 관리
 │   ├── data/
-│   │   └── cities.js             # 국내 10개 도시의 ID와 위·경도
+│   │   └── cities.js             # 국내 주요 12개 도시의 ID와 위·경도
 │   ├── router/
 │   │   └── index.js              # 경로, Lazy Loading, 동적 Route, 404 설정
 │   ├── stores/
@@ -100,7 +100,7 @@ vue-practice-skala/
 │   │   └── weatherSearchStore.js # 검색 API, 결과·상태 관리, localStorage 동기화
 │   ├── views/
 │   │   ├── LifeWeatherPlannerView.vue
-│   │   │                         # 지역 기반 생활 조언과 7일 날씨 달력
+│   │   │                         # 지역 기반 생활 조언과 5일 날씨 달력
 │   │   ├── WeatherHomeview.vue   # 메인 날씨 대시보드
 │   │   ├── WeatherDetailView.vue # 동적 도시 상세 페이지
 │   │   ├── WeatherSearchView.vue # 도시 검색 페이지
@@ -228,7 +228,7 @@ Options Store 방식으로 작성했습니다.
 
 #### `lifeWeatherStore`
 
-- State: 선택 지역, 현재 날씨, 7일 예보, 자동완성, 로딩과 오류, 좌표별 캐시
+- State: 선택 지역, 현재 날씨, 5일 예보, 자동완성, 로딩과 오류, 좌표별 캐시
 - Actions: 지역 검색, 선택 지역 저장, 날씨·대기질 병렬 조회
 - Persistence: 마지막 선택 지역을 `localStorage`에 저장
 - Cache: 같은 좌표의 API 결과를 메모리에서 10분간 재사용

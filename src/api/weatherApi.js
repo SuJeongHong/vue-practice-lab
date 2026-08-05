@@ -1,43 +1,9 @@
 import axios from 'axios'
 import { cities } from '@/data/cities'
+import { getKoreanWeatherCondition } from '@/utils/weatherCondition'
 
 const API_KEY = import.meta.env.VITE_OPENWEATHER_API_KEY?.trim()
 const CURRENT_WEATHER_API_URL = 'https://api.openweathermap.org/data/2.5/weather'
-
-const weatherConditionMap = {
-  Clear: {
-    label: '맑음',
-    icon: '☀️',
-  },
-  Clouds: {
-    label: '구름',
-    icon: '☁️',
-  },
-  Rain: {
-    label: '비',
-    icon: '🌧️',
-  },
-  Drizzle: {
-    label: '이슬비',
-    icon: '☔️',
-  },
-  Thunderstorm: {
-    label: '천둥번개',
-    icon: '🌩️',
-  },
-  Snow: {
-    label: '눈',
-    icon: '❄️',
-  },
-  Mist: {
-    label: '안개',
-    icon: '🌫️',
-  },
-  Fog: {
-    label: '안개',
-    icon: '🌫️',
-  },
-}
 
 // 도시 좌표로 현재 날씨를 조회하고 화면에서 사용할 형식으로 변환합니다.
 const fetchCurrentWeather = async (city) => {
@@ -57,16 +23,13 @@ const fetchCurrentWeather = async (city) => {
 
   // 구조분해로 API 객체와 날씨 배열에서 필요한 값을 꺼내고, 없는 배열 값에는 기본 객체를 사용합니다.
   const { main, wind, weather = [] } = data ?? {}
-  const [{ main: weatherMain } = {}] = Array.isArray(weather) ? weather : []
+  const [weatherCondition = {}] = Array.isArray(weather) ? weather : []
 
   if (!main || !wind) {
     throw new Error(`${city.name}의 날씨 응답 형식이 올바르지 않습니다.`)
   }
 
-  const condition = weatherConditionMap[weatherMain] ?? {
-    label: '기타',
-    icon: '🌤️',
-  }
+  const condition = getKoreanWeatherCondition(weatherCondition)
 
   return {
     id: city.id,

@@ -15,7 +15,7 @@ const serviceFeatures = [
   {
     icon: '🧥',
     title: '생활 날씨 플래너',
-    description: '7일 날씨와 대기질을 함께 분석해 옷차림, 우산, 마스크, 빨래, 야외활동 조언을 제공해요.',
+    description: '5일 날씨와 대기질을 함께 분석해 옷차림, 우산, 마스크, 빨래, 야외활동 조언을 제공해요.',
   },
 ]
 </script>
@@ -53,7 +53,7 @@ const serviceFeatures = [
         <p class="eyebrow">RELIABLE WEATHER DATA</p>
         <h2>실시간 데이터를 기반으로 정보를 제공해요</h2>
       </div>
-      <p>OpenWeather의 현재 날씨와 Open-Meteo의 예보·대기질 데이터를 활용합니다. 실제 외출이나 안전과 관련된 결정 전에는 최신 기상 특보도 함께 확인해 주세요.</p>
+      <p>OpenWeather의 현재 날씨·5일 예보·대기질 데이터를 활용합니다. 실제 외출이나 안전과 관련된 결정 전에는 최신 기상 특보도 함께 확인해 주세요.</p>
     </section>
 
     <RouterLink class="search-link" to="/weather-search">원하는 도시의 날씨 검색하기 →</RouterLink>

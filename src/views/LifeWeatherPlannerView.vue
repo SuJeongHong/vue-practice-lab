@@ -177,6 +177,18 @@ const lifeAdvice = computed(() => {
     outdoorAdvice = '더운 시간대를 피해 야외활동하세요.'
   }
 
+  let ventilationAdvice = '대기질이 무난해 10분 정도 환기하기 좋아요.'
+
+  if (!hasAirQuality) {
+    ventilationAdvice = '대기질 정보가 없어 환기 전 최신 미세먼지를 확인하세요.'
+  } else if (needsMask || today.pm10 >= 80) {
+    ventilationAdvice = '미세먼지가 높아 창문을 닫고 환기는 짧게 해 주세요.'
+  } else if (needsUmbrella) {
+    ventilationAdvice = '비가 오지 않는 시간을 골라 짧게 환기해 주세요.'
+  } else if (currentWeather.value?.humidity !== null && currentWeather.value?.humidity >= 70) {
+    ventilationAdvice = '습도가 높아 짧게 환기하고 제습기를 함께 사용하면 좋아요.'
+  }
+
   return [
     {
       title: '옷차림',
@@ -202,6 +214,11 @@ const lifeAdvice = computed(() => {
       title: '야외활동',
       icon: '🚶',
       text: outdoorAdvice,
+    },
+    {
+      title: '환기',
+      icon: '🪟',
+      text: ventilationAdvice,
     },
   ]
 })
@@ -316,8 +333,8 @@ const retryPlanner = () => {
 
       <section class="forecast-section">
         <div class="section-heading">
-          <span>7-DAY CALENDAR</span>
-          <h2>7일 날씨 달력</h2>
+          <span>5-DAY FORECAST</span>
+          <h2>5일 날씨 달력</h2>
         </div>
 
         <div class="forecast-grid">
@@ -362,21 +379,28 @@ const retryPlanner = () => {
     <section v-else-if="!selectedLocation" class="planner-state empty-state">
       <span class="state-icon" aria-hidden="true">🗺️</span>
       <h2>먼저 지역을 선택해 주세요</h2>
-      <p>선택한 지역을 기준으로 7일 생활 날씨를 만들어 드립니다.</p>
+      <p>선택한 지역을 기준으로 5일 생활 날씨를 만들어 드립니다.</p>
     </section>
   </main>
 </template>
 
 <style scoped>
 .life-planner-page {
+  box-sizing: border-box;
   width: 100%;
-  max-width: 900px;
+  max-width: 800px;
   margin: 0 auto;
   padding-bottom: 48px;
 }
 
 .planner-header {
   margin-bottom: 18px;
+  padding: 26px 28px;
+  background:
+    radial-gradient(circle at 90% 10%, rgba(112, 190, 219, 0.2), transparent 34%),
+    linear-gradient(145deg, #f5fbfd, #ffffff);
+  border: 1px solid #dce9ee;
+  border-radius: 16px;
 }
 
 .eyebrow,
@@ -396,7 +420,7 @@ const retryPlanner = () => {
 }
 
 .planner-header h1 {
-  font-size: 30px;
+  font-size: 28px;
 }
 
 .planner-header > p:last-child {
@@ -411,10 +435,12 @@ const retryPlanner = () => {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
-  padding: 15px 18px;
-  background: linear-gradient(135deg, #eaf8fb, #f3fbf7);
-  border: 1px solid #cce5e9;
-  border-radius: 14px;
+  padding: 14px 18px;
+  background: #ffffff;
+  border: 1px solid #dbe7eb;
+  border-left: 4px solid #4c91a9;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(39, 70, 82, 0.05);
 }
 
 .selected-location div {
@@ -431,7 +457,7 @@ const retryPlanner = () => {
 
 .selected-location strong {
   color: #204a58;
-  font-size: 18px;
+  font-size: 17px;
 }
 
 .selected-location button,
@@ -443,7 +469,7 @@ const retryPlanner = () => {
   font-weight: 800;
   background-color: #34778c;
   border: 0;
-  border-radius: 8px;
+  border-radius: 9px;
   cursor: pointer;
 }
 
@@ -452,8 +478,8 @@ const retryPlanner = () => {
   padding: 20px;
   background-color: #ffffff;
   border: 1px solid #dbe6ea;
-  border-radius: 14px;
-  box-shadow: 0 8px 24px rgba(38, 65, 76, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(39, 70, 82, 0.06);
 }
 
 .search-panel-header {
@@ -492,11 +518,11 @@ const retryPlanner = () => {
 }
 
 .planner-state {
-  padding: 52px 24px;
+  padding: 44px 24px;
   text-align: center;
   background-color: #f5fafb;
   border: 1px solid #dbe9ec;
-  border-radius: 16px;
+  border-radius: 12px;
 }
 
 .planner-state .state-icon {
@@ -535,12 +561,12 @@ const retryPlanner = () => {
   align-items: center;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 22px;
-  padding: 22px;
+  margin-bottom: 0;
+  padding: 22px 24px;
   color: #ffffff;
   background: linear-gradient(135deg, #246b85, #2f9a8b);
-  border-radius: 18px;
-  box-shadow: 0 12px 28px rgba(35, 99, 117, 0.18);
+  border-radius: 14px;
+  box-shadow: 0 8px 22px rgba(35, 99, 117, 0.16);
 }
 
 .current-condition {
@@ -550,7 +576,7 @@ const retryPlanner = () => {
 }
 
 .current-icon {
-  font-size: 50px;
+  font-size: 46px;
   filter: drop-shadow(0 5px 8px rgba(0, 0, 0, 0.15));
 }
 
@@ -567,7 +593,7 @@ const retryPlanner = () => {
 }
 
 .current-condition strong {
-  font-size: 23px;
+  font-size: 21px;
 }
 
 .current-metrics {
@@ -579,8 +605,8 @@ const retryPlanner = () => {
 }
 
 .current-metrics div {
-  min-width: 90px;
-  padding: 12px;
+  min-width: 86px;
+  padding: 11px;
   text-align: center;
   background-color: rgba(255, 255, 255, 0.13);
   border: 1px solid rgba(255, 255, 255, 0.16);
@@ -594,26 +620,33 @@ const retryPlanner = () => {
 
 .current-metrics dd {
   margin: 4px 0 0;
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 800;
 }
 
 .advice-section,
 .forecast-section {
-  margin-top: 24px;
+  margin-top: 18px;
+  padding: 22px;
+  background: #ffffff;
+  border: 1px solid #e0e9ed;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(39, 70, 82, 0.05);
 }
 
 .section-heading {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #edf2f4;
 }
 
 .section-heading h2 {
-  font-size: 22px;
+  font-size: 20px;
 }
 
 .advice-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(155px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -621,14 +654,23 @@ const retryPlanner = () => {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  min-height: 92px;
+  box-sizing: border-box;
   padding: 15px;
-  background-color: #ffffff;
-  border: 1px solid #dfe9ec;
-  border-radius: 12px;
+  background: #f9fbfc;
+  border: 1px solid #e3ebee;
+  border-radius: 10px;
 }
 
 .advice-card > span {
-  font-size: 25px;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  place-items: center;
+  font-size: 21px;
+  background: #edf6f8;
+  border-radius: 9px;
 }
 
 .advice-card h3 {
@@ -641,28 +683,28 @@ const retryPlanner = () => {
   margin: 0;
   color: #6b8189;
   font-size: 12px;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .forecast-grid {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
 }
 
 .forecast-card {
   min-width: 0;
-  padding: 12px 10px;
-  background-color: #ffffff;
+  padding: 14px 12px;
+  background: #fbfcfd;
   border: 1px solid #dde7ea;
-  border-radius: 13px;
-  box-shadow: 0 5px 14px rgba(42, 69, 80, 0.05);
+  border-radius: 11px;
+  box-shadow: none;
 }
 
 .forecast-card--today {
   background: linear-gradient(180deg, #f1fbfd, #ffffff);
   border-color: #88c8d6;
-  box-shadow: 0 7px 18px rgba(50, 130, 149, 0.12);
+  box-shadow: 0 5px 14px rgba(50, 130, 149, 0.1);
 }
 
 .forecast-card header {
@@ -681,7 +723,7 @@ const retryPlanner = () => {
 
 .forecast-condition {
   display: flex;
-  min-height: 70px;
+  min-height: 76px;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -691,7 +733,7 @@ const retryPlanner = () => {
 }
 
 .forecast-condition span {
-  font-size: 30px;
+  font-size: 28px;
 }
 
 .forecast-condition strong {
@@ -712,13 +754,13 @@ const retryPlanner = () => {
 
 .forecast-card dt {
   color: #82949b;
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .forecast-card dd {
   margin: 3px 0 0;
   color: #405962;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1.35;
 }
@@ -733,7 +775,7 @@ const retryPlanner = () => {
 
 @media (max-width: 820px) {
   .forecast-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -752,24 +794,23 @@ const retryPlanner = () => {
   }
 
   .forecast-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .forecast-card {
     padding: 15px;
   }
 
-  .forecast-condition {
-    min-height: 58px;
-    flex-direction: row;
-  }
-
   .forecast-card dl {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 440px) {
+  .planner-header {
+    padding: 22px 18px;
+  }
+
   .selected-location,
   .search-panel-header {
     align-items: stretch;
@@ -786,8 +827,19 @@ const retryPlanner = () => {
   }
 
   .advice-grid,
+  .forecast-grid,
   .forecast-card dl {
     grid-template-columns: 1fr;
+  }
+
+  .advice-section,
+  .forecast-section {
+    padding: 18px 15px;
+  }
+
+  .forecast-condition {
+    min-height: 58px;
+    flex-direction: row;
   }
 }
 </style>

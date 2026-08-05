@@ -4,8 +4,8 @@ import { useRouter } from 'vue-router'
 
 import BaseDashboardCard from '@/components/dashboard/BaseDashboardCard.vue'
 import SearchBar from '@/components/dashboard/SearchBar.vue'
+import KoreaWeatherMap from '@/components/weather/KoreaWeatherMap.vue'
 import WeatherCard from '@/components/weather/WeatherCard.vue'
-import WeatherExplorer from '@/components/weather/WeatherExplorer.vue'
 import { fetchAllWeather } from '@/api/weatherApi'
 import { useConfigStore } from '@/stores/configStore'
 
@@ -61,12 +61,6 @@ const handleSelectCard = (weather) => {
 // 상세보기 버튼을 누르면 선택한 도시 ID가 포함된 상세 경로로 이동합니다.
 const handleClickDetail = (weather) => {
   router.push(`/weather/${weather.id}`)
-}
-
-// 스마트 탐색에서 고른 도시를 기존 검색과 카드 선택 흐름에 연결합니다.
-const handleExplorerSelect = (weather) => {
-  searchQuery.value = weather.name
-  handleSelectCard(weather)
 }
 
 // 카드 선택 전후의 상태 문구를 콘솔에서 비교합니다.
@@ -125,41 +119,54 @@ watchEffect(() => {
 
 <template>
   <div class="dashboard-wrapper">
-    <BaseDashboardCard title="🔍 도시 검색">
+    <BaseDashboardCard title="🇰🇷 대한민국 주요 도시 날씨">
       <!-- 검색어는 부모가 관리하고 입력 컴포넌트는 변경된 값만 전달합니다. -->
-      <SearchBar :query="searchQuery" @update-query="handleUpdateQuery" />
+      <SearchBar :query="searchQuery" :cities="weatherList" @update-query="handleUpdateQuery" />
     </BaseDashboardCard>
 
-    <WeatherExplorer :weather-list="weatherList" :loading="loading" @select-city="handleExplorerSelect" />
+    <div class="dashboard-content">
+      <KoreaWeatherMap :cities="weatherList" :selected-city="searchQuery" @select-city="handleUpdateQuery" />
 
-    <BaseDashboardCard title="🏙️ 지역별 날씨 현황">
-      <p v-if="loading" class="loading-message">날씨 정보를 불러오는 중입니다.</p>
+      <BaseDashboardCard class="live-weather-panel" title="🏙️ 주요 도시 실시간 현황">
+        <p v-if="loading" class="loading-message">날씨 정보를 불러오는 중입니다.</p>
 
-      <p v-else-if="errorMessage" class="error-message">
-        {{ errorMessage }}
-      </p>
+        <p v-else-if="errorMessage" class="error-message">
+          {{ errorMessage }}
+        </p>
 
-      <div v-else-if="filteredWeatherList.length > 0" class="weather-list">
-        <WeatherCard v-for="item in filteredWeatherList" :key="item.id" :weather="item" @select-card="handleSelectCard" @click-detail="handleClickDetail" />
-      </div>
+        <div v-else-if="filteredWeatherList.length > 0" class="weather-list">
+          <WeatherCard v-for="item in filteredWeatherList" :key="item.id" :weather="item" @select-card="handleSelectCard" @click-detail="handleClickDetail" />
+        </div>
 
-      <p v-else class="empty-message">검색 결과와 일치하는 도시가 없습니다.</p>
+        <p v-else class="empty-message">검색 결과와 일치하는 도시가 없습니다.</p>
 
-      <div class="status-bar">
-        {{ selectedCityInfo }}
-      </div>
-    </BaseDashboardCard>
+        <div class="status-bar">
+          {{ selectedCityInfo }}
+        </div>
+      </BaseDashboardCard>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .dashboard-wrapper {
   width: 100%;
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 18px;
+}
+
+.dashboard-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.dashboard-content > * {
+  min-width: 0;
 }
 
 .dashboard-wrapper > :deep(.dashboard-card) {
@@ -178,46 +185,35 @@ watchEffect(() => {
   border-bottom: 1px solid #edf1f3;
 }
 
-.dashboard-wrapper :deep(.search-area) {
-  gap: 8px;
+.dashboard-content :deep(.dashboard-card.live-weather-panel) {
+  padding: 18px;
+  background: #ffffff;
+  border-color: #e1e8eb;
+  box-shadow: 0 4px 14px rgba(39, 55, 64, 0.06);
 }
 
-.dashboard-wrapper :deep(.search-area input) {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 12px 14px;
-  color: #263238;
-  background-color: #fafcfd;
-  border: 1px solid #cfd8dc;
-  border-radius: 8px;
-  outline: none;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.dashboard-wrapper :deep(.search-area input:focus) {
-  background-color: #ffffff;
-  border-color: #4f8fa8;
-  box-shadow: 0 0 0 3px rgba(79, 143, 168, 0.12);
-}
-
-.dashboard-wrapper :deep(.search-area p) {
-  margin: 0;
-  color: #78909c;
-  font-size: 13px;
+.dashboard-content :deep(.live-weather-panel h3) {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  color: #37474f;
+  border-bottom-color: #edf1f3;
 }
 
 .weather-list {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  max-height: 480px;
+  padding-right: 4px;
+  overflow-y: auto;
+  scrollbar-color: #b9cdd5 transparent;
+  scrollbar-width: thin;
 }
 
 .weather-list :deep(.weather-card) {
-  padding: 14px 16px;
-  background-color: #ffffff;
-  border: 1px solid #e1e7ea;
-  border-radius: 10px;
+  padding: 10px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8eb;
+  border-radius: 9px;
   box-shadow: none;
   transition:
     border-color 0.2s ease,
@@ -226,31 +222,31 @@ watchEffect(() => {
 }
 
 .weather-list :deep(.weather-card:hover) {
-  background-color: #ffffff;
+  background: #ffffff;
   border-color: #aebfc7;
-  box-shadow: 0 5px 12px rgba(43, 62, 72, 0.07);
+  box-shadow: 0 4px 10px rgba(43, 62, 72, 0.08);
   transform: translateY(-1px);
 }
 
 .weather-list :deep(.weather-information h4) {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   color: #263238;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .weather-list :deep(.weather-information p) {
-  margin: 0 0 9px;
-  color: #546e7a;
-  font-size: 14px;
+  margin: 0 0 6px;
+  color: #60727a;
+  font-size: 12px;
 }
 
 .weather-list :deep(.weather-information span) {
   display: inline-block;
-  padding: 4px 8px;
+  padding: 3px 7px;
   color: #455a64;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
-  background-color: #eef3f5;
+  background: #eef3f5;
   border-radius: 6px;
 }
 
@@ -274,19 +270,19 @@ watchEffect(() => {
 }
 
 .weather-list :deep(.btn-detail) {
-  padding: 7px 11px;
-  color: #356d83;
-  font-size: 13px;
+  padding: 6px 9px;
+  color: #466b7a;
+  font-size: 11px;
   font-weight: 700;
-  background-color: #ffffff;
-  border: 1px solid #b8cbd3;
+  background: #ffffff;
+  border: 1px solid #bdccd2;
   border-radius: 7px;
 }
 
 .weather-list :deep(.btn-detail:hover) {
   color: #ffffff;
-  background-color: #477f95;
-  border-color: #477f95;
+  background: #527f91;
+  border-color: #527f91;
 }
 
 .loading-message,
@@ -298,8 +294,8 @@ watchEffect(() => {
 }
 
 .loading-message {
-  color: #356d83;
-  background-color: #edf6f9;
+  color: #356f82;
+  background: rgba(232, 247, 249, 0.88);
 }
 
 .error-message {
@@ -310,20 +306,22 @@ watchEffect(() => {
 .empty-message {
   padding: 24px;
   margin: 0;
-  color: #78909c;
+  color: #64818a;
   text-align: center;
-  background-color: #f7f9fa;
+  background: rgba(255, 255, 255, 0.65);
+  border: 1px dashed #bad9dc;
   border-radius: 8px;
 }
 
 .status-bar {
-  margin-top: 14px;
-  padding: 10px 12px;
-  color: #55717d;
+  margin-top: 10px;
+  padding: 8px 10px;
+  color: #607780;
   text-align: center;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  background-color: #f1f6f8;
+  background: #f5f8f9;
+  border: 1px solid #e4ebee;
   border-radius: 7px;
 }
 
@@ -338,6 +336,18 @@ watchEffect(() => {
 
   .weather-list :deep(.weather-card) {
     gap: 12px;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-content {
+    grid-template-columns: 1fr;
+  }
+
+  .weather-list {
+    max-height: none;
+    padding-right: 0;
+    overflow-y: visible;
   }
 }
 </style>

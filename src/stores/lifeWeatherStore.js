@@ -1,11 +1,14 @@
 import axios from 'axios'
 import { defineStore } from 'pinia'
 
+import { getKoreanWeatherCondition } from '@/utils/weatherCondition'
+
 const LOCATION_STORAGE_KEY = 'life-weather-selected-location'
 const CACHE_TTL = 10 * 60 * 1000
-const GEOCODING_API_URL = 'https://geocoding-api.open-meteo.com/v1/search'
-const WEATHER_API_URL = 'https://api.open-meteo.com/v1/forecast'
-const AIR_QUALITY_API_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality'
+const GEOCODING_API_URL = 'https://api.openweathermap.org/geo/1.0/direct'
+const CURRENT_WEATHER_API_URL = 'https://api.openweathermap.org/data/2.5/weather'
+const WEATHER_FORECAST_API_URL = 'https://api.openweathermap.org/data/2.5/forecast'
+const AIR_QUALITY_API_URL = 'https://api.openweathermap.org/data/2.5/air_pollution/forecast'
 
 let latestLocationRequestId = 0
 let latestPlannerRequestId = 0
@@ -69,24 +72,7 @@ const saveSelectedLocation = (location) => {
   }
 }
 
-// includes()로 여러 WMO 코드 중 현재 날씨 코드가 포함되는지 확인합니다.
-const getWeatherCondition = (weatherCode) => {
-  const code = Number(weatherCode)
-
-  if (code === 0) return { label: '맑음', icon: '☀️' }
-  if (code === 1) return { label: '대체로 맑음', icon: '🌤️' }
-  if (code === 2) return { label: '구름 조금', icon: '⛅' }
-  if (code === 3) return { label: '흐림', icon: '☁️' }
-  if ([45, 48].includes(code)) return { label: '안개', icon: '🌫️' }
-  if ([51, 53, 55, 56, 57].includes(code)) return { label: '이슬비', icon: '🌦️' }
-  if ([61, 63, 65, 66, 67].includes(code)) return { label: '비', icon: '🌧️' }
-  if ([71, 73, 75, 77].includes(code)) return { label: '눈', icon: '🌨️' }
-  if ([80, 81, 82].includes(code)) return { label: '소나기', icon: '🌦️' }
-  if ([85, 86].includes(code)) return { label: '눈 소나기', icon: '❄️' }
-  if ([95, 96, 99].includes(code)) return { label: '뇌우', icon: '⛈️' }
-
-  return { label: '정보 없음', icon: '🌡️' }
-}
+const getApiKey = () => import.meta.env.VITE_OPENWEATHER_API_KEY?.trim()
 
 const toNullableNumber = (value) => {
   if (value === null || value === undefined || value === '') {
@@ -105,20 +91,31 @@ const getAverage = (values) => {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)
 }
 
-// 시간별 미세먼지 값을 날짜별 일평균으로 묶고 없는 값은 null로 유지합니다.
-const groupDailyAirQuality = (hourly = {}) => {
-  const groupedValues = {}
-  const safeHourly = hourly ?? {}
-  const hourlyTimes = Array.isArray(safeHourly.time) ? safeHourly.time : []
+const getLocalDate = (timestamp, timezoneOffset = 0) => {
+  const unixTimestamp = Number(timestamp)
 
-  hourlyTimes.forEach((time, index) => {
-    if (typeof time !== 'string') {
+  if (!Number.isFinite(unixTimestamp)) {
+    return ''
+  }
+
+  return new Date((unixTimestamp + timezoneOffset) * 1000).toISOString().slice(0, 10)
+}
+
+const getLocalHour = (timestamp, timezoneOffset = 0) => new Date((Number(timestamp) + timezoneOffset) * 1000).getUTCHours()
+
+// OpenWeather의 시간별 미세먼지 값을 날짜별 일평균으로 묶습니다.
+const groupDailyAirQuality = (forecastList = [], timezoneOffset = 0) => {
+  const groupedValues = {}
+
+  forecastList.forEach((forecast) => {
+    const date = getLocalDate(forecast?.dt, timezoneOffset)
+
+    if (!date) {
       return
     }
 
-    const date = time.slice(0, 10)
-    const pm10 = toNullableNumber(safeHourly.pm10?.[index])
-    const pm2_5 = toNullableNumber(safeHourly.pm2_5?.[index])
+    const pm10 = toNullableNumber(forecast.components?.pm10)
+    const pm2_5 = toNullableNumber(forecast.components?.pm2_5)
 
     if (!groupedValues[date]) {
       groupedValues[date] = { pm10: [], pm2_5: [] }
@@ -137,6 +134,50 @@ const groupDailyAirQuality = (hourly = {}) => {
       },
     ]),
   )
+}
+
+// 3시간 간격 예보를 날짜별 최고·최저 기온, 강수확률과 대표 날씨로 가공합니다.
+const groupDailyForecast = (forecastList = [], timezoneOffset = 0) => {
+  const groupedForecasts = {}
+
+  forecastList.forEach((forecast) => {
+    const date = getLocalDate(forecast?.dt, timezoneOffset)
+
+    if (!date) {
+      return
+    }
+
+    if (!groupedForecasts[date]) {
+      groupedForecasts[date] = []
+    }
+
+    groupedForecasts[date].push(forecast)
+  })
+
+  return Object.entries(groupedForecasts)
+    .slice(0, 5)
+    .map(([date, forecasts]) => {
+      const representativeForecast = forecasts.reduce((closest, forecast) => {
+        const currentDistance = Math.abs(getLocalHour(forecast.dt, timezoneOffset) - 12)
+        const closestDistance = Math.abs(getLocalHour(closest.dt, timezoneOffset) - 12)
+        return currentDistance < closestDistance ? forecast : closest
+      })
+      const maxTemperatures = forecasts.map((forecast) => toNullableNumber(forecast.main?.temp_max)).filter((temperature) => temperature !== null)
+      const minTemperatures = forecasts.map((forecast) => toNullableNumber(forecast.main?.temp_min)).filter((temperature) => temperature !== null)
+      const precipitationProbabilities = forecasts.map((forecast) => toNullableNumber(forecast.pop)).filter((probability) => probability !== null)
+      const condition = getKoreanWeatherCondition(representativeForecast.weather?.[0])
+
+      return {
+        date,
+        condition: condition.label,
+        conditionIcon: condition.icon,
+        maxTemp: maxTemperatures.length > 0 ? Math.max(...maxTemperatures) : null,
+        minTemp: minTemperatures.length > 0 ? Math.min(...minTemperatures) : null,
+        precipitationProbability: precipitationProbabilities.length > 0 ? Math.round(Math.max(...precipitationProbabilities) * 100) : null,
+        pm10: null,
+        pm2_5: null,
+      }
+    })
 }
 
 const getCacheKey = (location) => `${location.lat.toFixed(4)}:${location.lon.toFixed(4)}`
@@ -168,10 +209,11 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
       return normalizedLocation
     },
 
-    // 검색어와 연관된 지역을 Open-Meteo에서 최대 5개까지 조회합니다.
+    // 검색어와 연관된 지역을 OpenWeather에서 최대 5개까지 조회합니다.
     async searchLocations(query) {
       const trimmedQuery = query.trim()
       const requestId = ++latestLocationRequestId
+      const apiKey = getApiKey()
 
       if (trimmedQuery.length < 1) {
         this.clearLocationSuggestions()
@@ -182,13 +224,18 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
       this.isLocationLoading = true
       this.locationErrorMessage = ''
 
+      if (!apiKey) {
+        this.isLocationLoading = false
+        this.locationErrorMessage = '.env.local에 OpenWeather API 키를 입력해 주세요.'
+        return []
+      }
+
       try {
         const response = await axios.get(GEOCODING_API_URL, {
           params: {
-            name: trimmedQuery,
-            count: 5,
-            language: 'ko',
-            format: 'json',
+            q: trimmedQuery,
+            limit: 5,
+            appid: apiKey,
           },
         })
 
@@ -196,14 +243,14 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
           return []
         }
 
-        const locations = Array.isArray(response.data?.results) ? response.data.results : []
-        const suggestions = locations.slice(0, 5).map((location) => ({
-          id: location.id,
-          name: location.name,
-          admin1: location.admin1 ?? '',
+        const locations = Array.isArray(response.data) ? response.data : []
+        const suggestions = locations.slice(0, 5).map((location, index) => ({
+          id: `${location.lat}:${location.lon}:${index}`,
+          name: location.local_names?.ko ?? location.name,
+          admin1: location.state ?? '',
           country: location.country ?? '',
-          lat: location.latitude,
-          lon: location.longitude,
+          lat: location.lat,
+          lon: location.lon,
         }))
 
         this.locationSuggestions = suggestions
@@ -211,7 +258,7 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
       } catch (error) {
         if (requestId === latestLocationRequestId) {
           this.locationSuggestions = []
-          this.locationErrorMessage = axios.isAxiosError(error) ? '지역 검색 결과를 불러오지 못했습니다.' : '지역 검색 중 오류가 발생했습니다.'
+          this.locationErrorMessage = axios.isAxiosError(error) && error.response?.status === 401 ? 'OpenWeather API 키를 확인해 주세요.' : '지역 검색 결과를 불러오지 못했습니다.'
         }
 
         return []
@@ -230,7 +277,7 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
       this.locationErrorMessage = ''
     },
 
-    // Promise.all()로 날씨와 대기질을 동시에 조회하고 같은 좌표의 결과는 10분간 재사용합니다.
+    // OpenWeather의 현재 날씨·5일 예보·대기질을 동시에 조회하고 같은 좌표는 10분간 재사용합니다.
     async fetchPlanner(locationInput = this.selectedLocation, options = {}) {
       if (!isValidLocation(locationInput)) {
         this.errorMessage = '날씨를 확인할 지역을 먼저 선택해 주세요.'
@@ -242,8 +289,15 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
       const cacheKey = getCacheKey(location)
       const cachedResult = this.cache[cacheKey]
       const canUseCache = !options.force && cachedResult && Date.now() - cachedResult.savedAt < CACHE_TTL
+      const apiKey = getApiKey()
 
       this.errorMessage = ''
+
+      if (!apiKey) {
+        this.isLoading = false
+        this.errorMessage = '.env.local에 OpenWeather API 키를 입력해 주세요.'
+        return null
+      }
 
       if (canUseCache) {
         this.currentWeather = cachedResult.currentWeather
@@ -257,24 +311,30 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
       this.isLoading = true
 
       try {
-        const [weatherResponse, airQualityResponse] = await Promise.all([
-          axios.get(WEATHER_API_URL, {
+        const [currentWeatherResult, weatherForecastResult, airQualityResult] = await Promise.allSettled([
+          axios.get(CURRENT_WEATHER_API_URL, {
             params: {
-              latitude: location.lat,
-              longitude: location.lon,
-              current: 'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code',
-              daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
-              forecast_days: 7,
-              timezone: 'auto',
+              lat: location.lat,
+              lon: location.lon,
+              appid: apiKey,
+              units: 'metric',
+              lang: 'kr',
+            },
+          }),
+          axios.get(WEATHER_FORECAST_API_URL, {
+            params: {
+              lat: location.lat,
+              lon: location.lon,
+              appid: apiKey,
+              units: 'metric',
+              lang: 'kr',
             },
           }),
           axios.get(AIR_QUALITY_API_URL, {
             params: {
-              latitude: location.lat,
-              longitude: location.lon,
-              hourly: 'pm10,pm2_5',
-              forecast_days: 7,
-              timezone: 'auto',
+              lat: location.lat,
+              lon: location.lon,
+              appid: apiKey,
             },
           }),
         ])
@@ -283,35 +343,32 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
           return null
         }
 
-        const weatherData = weatherResponse.data ?? {}
-        const airQualityByDate = groupDailyAirQuality(airQualityResponse.data?.hourly)
-        const currentCondition = getWeatherCondition(weatherData.current?.weather_code)
+        if (weatherForecastResult.status === 'rejected') {
+          throw weatherForecastResult.reason
+        }
+
+        const forecastData = weatherForecastResult.value.data ?? {}
+        const forecastList = Array.isArray(forecastData.list) ? forecastData.list : []
+        const timezoneOffset = toNullableNumber(forecastData.city?.timezone) ?? 0
+        const fallbackCurrentData = forecastList[0] ?? {}
+        const currentData = currentWeatherResult.status === 'fulfilled' ? currentWeatherResult.value.data : fallbackCurrentData
+        const currentCondition = getKoreanWeatherCondition(currentData.weather?.[0])
         const currentWeather = {
-          temp: toNullableNumber(weatherData.current?.temperature_2m),
-          feelsLike: toNullableNumber(weatherData.current?.apparent_temperature),
-          humidity: toNullableNumber(weatherData.current?.relative_humidity_2m),
+          temp: toNullableNumber(currentData.main?.temp),
+          feelsLike: toNullableNumber(currentData.main?.feels_like),
+          humidity: toNullableNumber(currentData.main?.humidity),
           condition: currentCondition.label,
           conditionIcon: currentCondition.icon,
         }
-        const dailyTimes = Array.isArray(weatherData.daily?.time) ? weatherData.daily.time : []
-        const dailyForecast = dailyTimes.slice(0, 7).map((date, index) => {
-          const condition = getWeatherCondition(weatherData.daily.weather_code?.[index])
-          const airQuality = airQualityByDate[date] ?? { pm10: null, pm2_5: null }
-
-          return {
-            date,
-            condition: condition.label,
-            conditionIcon: condition.icon,
-            maxTemp: toNullableNumber(weatherData.daily.temperature_2m_max?.[index]),
-            minTemp: toNullableNumber(weatherData.daily.temperature_2m_min?.[index]),
-            precipitationProbability: toNullableNumber(weatherData.daily.precipitation_probability_max?.[index]),
-            pm10: airQuality.pm10,
-            pm2_5: airQuality.pm2_5,
-          }
-        })
+        const airQualityList = airQualityResult.status === 'fulfilled' && Array.isArray(airQualityResult.value.data?.list) ? airQualityResult.value.data.list : []
+        const airQualityByDate = groupDailyAirQuality(airQualityList, timezoneOffset)
+        const dailyForecast = groupDailyForecast(forecastList, timezoneOffset).map((forecast) => ({
+          ...forecast,
+          ...airQualityByDate[forecast.date],
+        }))
 
         if (dailyForecast.length === 0) {
-          throw new Error('7일 예보 데이터가 없습니다.')
+          throw new Error('5일 예보 데이터가 없습니다.')
         }
 
         const plannerResult = {
@@ -327,7 +384,13 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
         return plannerResult
       } catch (error) {
         if (requestId === latestPlannerRequestId) {
-          this.errorMessage = axios.isAxiosError(error) ? '날씨 또는 대기질 정보를 불러오지 못했습니다.' : '생활 날씨 플래너 데이터를 처리하지 못했습니다.'
+          if (axios.isAxiosError(error) && error.response?.status === 401) {
+            this.errorMessage = 'OpenWeather API 키를 확인해 주세요.'
+          } else if (axios.isAxiosError(error) && error.response?.status === 429) {
+            this.errorMessage = 'OpenWeather API 요청 한도를 초과했습니다. 잠시 후 다시 시도해 주세요.'
+          } else {
+            this.errorMessage = axios.isAxiosError(error) ? 'OpenWeather 날씨 정보를 불러오지 못했습니다.' : '생활 날씨 플래너 데이터를 처리하지 못했습니다.'
+          }
         }
 
         return null

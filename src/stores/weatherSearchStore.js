@@ -1,6 +1,8 @@
 import axios from 'axios'
 import { defineStore } from 'pinia'
 
+import { getKoreanWeatherCondition, normalizeWeatherLabel } from '@/utils/weatherCondition'
+
 const STORAGE_KEY = 'weather-search-results'
 const MAX_RESULTS = 10
 const GEOCODING_API_URL = 'https://api.openweathermap.org/geo/1.0/direct'
@@ -38,7 +40,12 @@ const loadSearchResults = () => {
 
     const parsedResults = JSON.parse(savedResults)
 
-    return Array.isArray(parsedResults) ? parsedResults.slice(0, MAX_RESULTS) : []
+    return Array.isArray(parsedResults)
+      ? parsedResults.slice(0, MAX_RESULTS).map((result) => ({
+          ...result,
+          description: normalizeWeatherLabel(result.description),
+        }))
+      : []
   } catch {
     return []
   }
@@ -209,13 +216,14 @@ export const useWeatherSearchStore = defineStore('weatherSearch', {
           throw new Error('현재 날씨 응답 형식이 올바르지 않습니다.')
         }
 
+        const condition = getKoreanWeatherCondition(data.weather?.[0])
         const weather = {
           id: data.id,
           name: getKoreanLocationName(location),
           country: data.sys?.country ?? '',
           temp: main.temp,
           feelsLike: main.feels_like,
-          description: data.weather?.[0]?.description ?? '정보 없음',
+          description: condition.label,
           humidity: main.humidity,
           icon: data.weather?.[0]?.icon ?? '',
           searchedAt: new Date().toISOString(),
