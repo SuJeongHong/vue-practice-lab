@@ -12,16 +12,7 @@ const router = useRouter()
 const configStore = useConfigStore()
 const lifeWeatherStore = useLifeWeatherStore()
 
-const {
-  selectedLocation,
-  currentWeather,
-  dailyForecast,
-  isLoading,
-  errorMessage,
-  locationSuggestions,
-  isLocationLoading,
-  locationErrorMessage,
-} = storeToRefs(lifeWeatherStore)
+const { selectedLocation, currentWeather, dailyForecast, isLoading, errorMessage, locationSuggestions, isLocationLoading, locationErrorMessage } = storeToRefs(lifeWeatherStore)
 
 const isLocationSearchOpen = ref(!selectedLocation.value)
 
@@ -33,28 +24,14 @@ const routeLocation = computed(() => {
   const latitudeValue = getRouteQueryValue(route.query.lat)
   const longitudeValue = getRouteQueryValue(route.query.lon)
 
-  if (
-    typeof name !== 'string' ||
-    !name.trim() ||
-    typeof latitudeValue !== 'string' ||
-    !latitudeValue.trim() ||
-    typeof longitudeValue !== 'string' ||
-    !longitudeValue.trim()
-  ) {
+  if (typeof name !== 'string' || !name.trim() || typeof latitudeValue !== 'string' || !latitudeValue.trim() || typeof longitudeValue !== 'string' || !longitudeValue.trim()) {
     return null
   }
 
   const latitude = Number(latitudeValue)
   const longitude = Number(longitudeValue)
 
-  if (
-    !Number.isFinite(latitude) ||
-    latitude < -90 ||
-    latitude > 90 ||
-    !Number.isFinite(longitude) ||
-    longitude < -180 ||
-    longitude > 180
-  ) {
+  if (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 || !Number.isFinite(longitude) || longitude < -180 || longitude > 180) {
     return null
   }
 
@@ -129,8 +106,7 @@ const formatTemperature = (temperature) => {
     return '예보 없음'
   }
 
-  const displayTemperature =
-    configStore.unit === 'fahrenheit' ? (temperature * 9) / 5 + 32 : temperature
+  const displayTemperature = configStore.unit === 'fahrenheit' ? (temperature * 9) / 5 + 32 : temperature
 
   return `${Math.round(displayTemperature)}${configStore.unitSymbol}`
 }
@@ -141,8 +117,7 @@ const formatDate = (date) =>
     day: 'numeric',
   }).format(new Date(`${date}T00:00:00`))
 
-const formatWeekday = (date) =>
-  new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(new Date(`${date}T00:00:00`))
+const formatWeekday = (date) => new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(new Date(`${date}T00:00:00`))
 
 const formatAirQuality = (value) => (value === null ? '예보 없음' : `${value}㎍/㎥`)
 const formatPrecipitation = (value) => (value === null ? '예보 없음' : `${value}%`)
@@ -188,15 +163,9 @@ const lifeAdvice = computed(() => {
   }
 
   const hasAirQuality = today.pm10 !== null && today.pm2_5 !== null
-  const needsUmbrella =
-    today.precipitationProbability !== null && today.precipitationProbability >= 50
+  const needsUmbrella = today.precipitationProbability !== null && today.precipitationProbability >= 50
   const needsMask = today.pm2_5 !== null && today.pm2_5 >= 36
-  const isLaundryFriendly =
-    hasAirQuality &&
-    today.precipitationProbability !== null &&
-    today.precipitationProbability < 30 &&
-    today.pm10 < 80 &&
-    today.pm2_5 < 36
+  const isLaundryFriendly = hasAirQuality && today.precipitationProbability !== null && today.precipitationProbability < 30 && today.pm10 < 80 && today.pm2_5 < 36
 
   let outdoorAdvice = '야외활동하기 무난한 날씨입니다.'
 
@@ -222,21 +191,12 @@ const lifeAdvice = computed(() => {
     {
       title: '마스크',
       icon: '😷',
-      text:
-        today.pm2_5 === null
-          ? '초미세먼지 예보가 없어 최신 정보를 확인하세요.'
-          : needsMask
-            ? 'PM2.5가 높아 마스크를 추천해요.'
-            : '미세먼지용 마스크 없이도 무난해요.',
+      text: today.pm2_5 === null ? '초미세먼지 예보가 없어 최신 정보를 확인하세요.' : needsMask ? 'PM2.5가 높아 마스크를 추천해요.' : '미세먼지용 마스크 없이도 무난해요.',
     },
     {
       title: '빨래',
       icon: '🧺',
-      text: !hasAirQuality
-        ? '대기질 예보가 없어 빨래 지수를 판단하기 어려워요.'
-        : isLaundryFriendly
-          ? '강수와 미세먼지가 낮아 빨래하기 좋아요.'
-          : '실내 건조를 고려해 보세요.',
+      text: !hasAirQuality ? '대기질 예보가 없어 빨래 지수를 판단하기 어려워요.' : isLaundryFriendly ? '강수와 미세먼지가 낮아 빨래하기 좋아요.' : '실내 건조를 고려해 보세요.',
     },
     {
       title: '야외활동',
@@ -277,14 +237,7 @@ const retryPlanner = () => {
           <p>도시나 지역을 검색한 뒤 정확한 위치를 선택해 주세요.</p>
         </div>
 
-        <button
-          v-if="selectedLocation"
-          type="button"
-          class="close-button"
-          @click="closeLocationSearch"
-        >
-          닫기
-        </button>
+        <button v-if="selectedLocation" type="button" class="close-button" @click="closeLocationSearch">닫기</button>
       </div>
 
       <LocationSearchBar
@@ -368,12 +321,7 @@ const retryPlanner = () => {
         </div>
 
         <div class="forecast-grid">
-          <article
-            v-for="(day, index) in dailyForecast"
-            :key="day.date"
-            class="forecast-card"
-            :class="{ 'forecast-card--today': index === 0 }"
-          >
+          <article v-for="(day, index) in dailyForecast" :key="day.date" class="forecast-card" :class="{ 'forecast-card--today': index === 0 }">
             <header>
               <span>{{ index === 0 ? '오늘' : formatWeekday(day.date) }}</span>
               <strong>{{ formatDate(day.date) }}</strong>

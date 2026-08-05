@@ -83,9 +83,7 @@ const fetchCurrentWeather = async (city) => {
 export const fetchAllWeather = async () => {
   const results = await Promise.allSettled(cities.map((city) => fetchCurrentWeather(city)))
 
-  const weatherList = results
-    .filter((result) => result.status === 'fulfilled')
-    .map((result) => result.value)
+  const weatherList = results.filter((result) => result.status === 'fulfilled').map((result) => result.value)
 
   if (weatherList.length === 0) {
     const firstFailure = results.find((result) => result.status === 'rejected')

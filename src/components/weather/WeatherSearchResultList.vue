@@ -28,12 +28,7 @@ const emit = defineEmits(['remove', 'clear'])
     </header>
 
     <div v-if="results.length > 0" class="result-grid">
-      <WeatherSearchResultCard
-        v-for="weather in results"
-        :key="weather.id"
-        :weather="weather"
-        @remove="emit('remove', $event)"
-      />
+      <WeatherSearchResultCard v-for="weather in results" :key="weather.id" :weather="weather" @remove="emit('remove', $event)" />
     </div>
 
     <p v-else class="empty-message">검색한 도시가 없습니다</p>

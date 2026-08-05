@@ -12,20 +12,12 @@ import UnitToggler from './UnitToggler.vue'
         <span>날씨 대시보드</span>
       </RouterLink>
 
-      <RouterLink
-        to="/weather-search"
-        class="navigation-link"
-        exact-active-class="navigation-link--active"
-      >
+      <RouterLink to="/weather-search" class="navigation-link" exact-active-class="navigation-link--active">
         <span aria-hidden="true">🔎</span>
         <span>날씨 검색</span>
       </RouterLink>
 
-      <RouterLink
-        to="/life-weather-planner"
-        class="navigation-link"
-        exact-active-class="navigation-link--active"
-      >
+      <RouterLink to="/life-weather-planner" class="navigation-link" exact-active-class="navigation-link--active">
         <span aria-hidden="true">📅</span>
         <span>생활 날씨 플래너</span>
       </RouterLink>

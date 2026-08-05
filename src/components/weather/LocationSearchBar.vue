@@ -59,9 +59,7 @@ let debounceTimer = null
 let ignoreNextInputChange = false
 
 const suggestionPanelId = computed(() => `${props.inputId}-suggestions`)
-const isSubmitLoading = computed(
-  () => props.loading || (props.selectionRequired && props.suggestionLoading),
-)
+const isSubmitLoading = computed(() => props.loading || (props.selectionRequired && props.suggestionLoading))
 
 // 진행 중인 자동완성 예약을 취소해 이전 입력의 요청이 실행되지 않도록 합니다.
 const clearDebounceTimer = () => {
@@ -170,18 +168,11 @@ const selectSuggestion = (location) => {
   emit('search', location)
 }
 
-const getSuggestionArea = (location) =>
-  [location.state || location.admin1, location.country].filter(Boolean).join(', ')
+const getSuggestionArea = (location) => [location.state || location.admin1, location.country].filter(Boolean).join(', ')
 
 // 입력창에 다시 초점을 맞추면 진행했거나 완료한 자동완성 패널을 다시 엽니다.
 const handleFocus = () => {
-  if (
-    inputValue.value.trim().length >= 1 &&
-    (isDebouncing.value ||
-      props.suggestionLoading ||
-      hasSuggestionResult.value ||
-      props.suggestions.length > 0)
-  ) {
+  if (inputValue.value.trim().length >= 1 && (isDebouncing.value || props.suggestionLoading || hasSuggestionResult.value || props.suggestions.length > 0)) {
     isSuggestionOpen.value = true
   }
 }
@@ -205,11 +196,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <form
-    class="location-search-form"
-    :class="{ 'location-search-form--embedded': embedded }"
-    @submit.prevent="submitSearch"
-  >
+  <form class="location-search-form" :class="{ 'location-search-form--embedded': embedded }" @submit.prevent="submitSearch">
     <label :for="inputId">{{ label }}</label>
 
     <div class="search-controls">
@@ -230,26 +217,15 @@ onBeforeUnmount(() => {
         />
 
         <div v-if="isSuggestionOpen" :id="suggestionPanelId" class="suggestion-panel">
-          <p v-if="isDebouncing || suggestionLoading" class="suggestion-status" role="status">
-            연관 지역을 찾는 중입니다.
-          </p>
+          <p v-if="isDebouncing || suggestionLoading" class="suggestion-status" role="status">연관 지역을 찾는 중입니다.</p>
 
-          <p
-            v-else-if="suggestionErrorMessage"
-            class="suggestion-status suggestion-error"
-            role="alert"
-          >
+          <p v-else-if="suggestionErrorMessage" class="suggestion-status suggestion-error" role="alert">
             {{ suggestionErrorMessage }}
           </p>
 
           <ul v-else-if="suggestions.length > 0" class="suggestion-list" role="listbox">
             <li v-for="location in suggestions" :key="location.id">
-              <button
-                type="button"
-                class="suggestion-item"
-                role="option"
-                @mousedown.prevent="selectSuggestion(location)"
-              >
+              <button type="button" class="suggestion-item" role="option" @mousedown.prevent="selectSuggestion(location)">
                 <strong>{{ location.name }}</strong>
                 <small>{{ getSuggestionArea(location) }}</small>
               </button>

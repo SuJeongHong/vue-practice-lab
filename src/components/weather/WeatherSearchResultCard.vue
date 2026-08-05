@@ -68,14 +68,7 @@ const removeResult = () => {
         <h2>{{ weather.name }}</h2>
       </div>
 
-      <button
-        type="button"
-        class="remove-button"
-        :aria-label="`${weather.name} 검색 결과 삭제`"
-        @click="removeResult"
-      >
-        삭제
-      </button>
+      <button type="button" class="remove-button" :aria-label="`${weather.name} 검색 결과 삭제`" @click="removeResult">삭제</button>
     </header>
 
     <div class="weather-summary">

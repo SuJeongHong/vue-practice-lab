@@ -74,9 +74,7 @@ const displayTemp = computed(() => {
           <span class="temperature-icon" aria-hidden="true">🌡️</span>
           <div>
             <span class="temperature-label">현재 관측 기온</span>
-            <strong class="temperature-value">
-              {{ displayTemp }}{{ configStore.unitSymbol }}
-            </strong>
+            <strong class="temperature-value"> {{ displayTemp }}{{ configStore.unitSymbol }} </strong>
           </div>
         </div>
 

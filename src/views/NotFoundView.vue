@@ -15,9 +15,7 @@ const route = useRoute()
       {{ route.fullPath }}
     </p>
 
-    <RouterLink to="/">
-      날씨 대시보드로 돌아가기
-    </RouterLink>
+    <RouterLink to="/"> 날씨 대시보드로 돌아가기 </RouterLink>
   </section>
 </template>
 

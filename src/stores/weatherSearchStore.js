@@ -248,9 +248,7 @@ export const useWeatherSearchStore = defineStore('weatherSearch', {
     // Spread로 원본 목록을 보존하면서 최신 결과를 앞에 결합하고 10개까지만 유지합니다.
     addSearchResult(weather) {
       const weatherId = String(weather.id)
-      const remainingResults = this.searchResults.filter(
-        (result) => String(result.id) !== weatherId,
-      )
+      const remainingResults = this.searchResults.filter((result) => String(result.id) !== weatherId)
 
       this.searchResults = [weather, ...remainingResults].slice(0, MAX_RESULTS)
 

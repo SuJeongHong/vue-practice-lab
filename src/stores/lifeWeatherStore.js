@@ -211,9 +211,7 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
       } catch (error) {
         if (requestId === latestLocationRequestId) {
           this.locationSuggestions = []
-          this.locationErrorMessage = axios.isAxiosError(error)
-            ? '지역 검색 결과를 불러오지 못했습니다.'
-            : '지역 검색 중 오류가 발생했습니다.'
+          this.locationErrorMessage = axios.isAxiosError(error) ? '지역 검색 결과를 불러오지 못했습니다.' : '지역 검색 중 오류가 발생했습니다.'
         }
 
         return []
@@ -243,8 +241,7 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
       const requestId = ++latestPlannerRequestId
       const cacheKey = getCacheKey(location)
       const cachedResult = this.cache[cacheKey]
-      const canUseCache =
-        !options.force && cachedResult && Date.now() - cachedResult.savedAt < CACHE_TTL
+      const canUseCache = !options.force && cachedResult && Date.now() - cachedResult.savedAt < CACHE_TTL
 
       this.errorMessage = ''
 
@@ -266,8 +263,7 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
               latitude: location.lat,
               longitude: location.lon,
               current: 'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code',
-              daily:
-                'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
+              daily: 'weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max',
               forecast_days: 7,
               timezone: 'auto',
             },
@@ -308,9 +304,7 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
             conditionIcon: condition.icon,
             maxTemp: toNullableNumber(weatherData.daily.temperature_2m_max?.[index]),
             minTemp: toNullableNumber(weatherData.daily.temperature_2m_min?.[index]),
-            precipitationProbability: toNullableNumber(
-              weatherData.daily.precipitation_probability_max?.[index],
-            ),
+            precipitationProbability: toNullableNumber(weatherData.daily.precipitation_probability_max?.[index]),
             pm10: airQuality.pm10,
             pm2_5: airQuality.pm2_5,
           }
@@ -333,9 +327,7 @@ export const useLifeWeatherStore = defineStore('lifeWeather', {
         return plannerResult
       } catch (error) {
         if (requestId === latestPlannerRequestId) {
-          this.errorMessage = axios.isAxiosError(error)
-            ? '날씨 또는 대기질 정보를 불러오지 못했습니다.'
-            : '생활 날씨 플래너 데이터를 처리하지 못했습니다.'
+          this.errorMessage = axios.isAxiosError(error) ? '날씨 또는 대기질 정보를 불러오지 못했습니다.' : '생활 날씨 플래너 데이터를 처리하지 못했습니다.'
         }
 
         return null

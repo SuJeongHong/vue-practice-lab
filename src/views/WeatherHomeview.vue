@@ -131,13 +131,7 @@ watchEffect(() => {
       </p>
 
       <div v-else-if="filteredWeatherList.length > 0" class="weather-list">
-        <WeatherCard
-          v-for="item in filteredWeatherList"
-          :key="item.id"
-          :weather="item"
-          @select-card="handleSelectCard"
-          @click-detail="handleClickDetail"
-        />
+        <WeatherCard v-for="item in filteredWeatherList" :key="item.id" :weather="item" @select-card="handleSelectCard" @click-detail="handleClickDetail" />
       </div>
 
       <p v-else class="empty-message">검색 결과와 일치하는 도시가 없습니다.</p>

@@ -7,14 +7,7 @@ const configStore = useConfigStore()
 
 <template>
   <div class="unit-toggler">
-    <el-switch
-      v-model="configStore.unit"
-      active-value="fahrenheit"
-      inactive-value="celsius"
-      active-text="화씨(℉)"
-      inactive-text="섭씨(℃)"
-      aria-label="온도 단위 변경"
-    />
+    <el-switch v-model="configStore.unit" active-value="fahrenheit" inactive-value="celsius" active-text="화씨(℉)" inactive-text="섭씨(℃)" aria-label="온도 단위 변경" />
   </div>
 </template>
 

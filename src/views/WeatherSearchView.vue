@@ -11,15 +11,7 @@ const route = useRoute()
 const router = useRouter()
 const weatherSearchStore = useWeatherSearchStore()
 
-const {
-  searchResults,
-  isLoading,
-  errorMessage,
-  resultCount,
-  citySuggestions,
-  isSuggestionLoading,
-  suggestionErrorMessage,
-} = storeToRefs(weatherSearchStore)
+const { searchResults, isLoading, errorMessage, resultCount, citySuggestions, isSuggestionLoading, suggestionErrorMessage } = storeToRefs(weatherSearchStore)
 
 const routeCity = computed(() => {
   const city = Array.isArray(route.query.city) ? route.query.city[0] : route.query.city
@@ -121,20 +113,13 @@ const handleClearAll = () => {
       @search="handleSearch"
     />
 
-    <p v-if="isLoading" class="status-message loading-message" role="status">
-      날씨 정보를 불러오는 중입니다.
-    </p>
+    <p v-if="isLoading" class="status-message loading-message" role="status">날씨 정보를 불러오는 중입니다.</p>
 
     <p v-else-if="errorMessage" class="status-message error-message" role="alert">
       {{ errorMessage }}
     </p>
 
-    <WeatherSearchResultList
-      :results="searchResults"
-      :result-count="resultCount"
-      @remove="weatherSearchStore.removeSearchResult"
-      @clear="handleClearAll"
-    />
+    <WeatherSearchResultList :results="searchResults" :result-count="resultCount" @remove="weatherSearchStore.removeSearchResult" @clear="handleClearAll" />
   </main>
 </template>
 
