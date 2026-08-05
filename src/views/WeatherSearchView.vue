@@ -125,8 +125,9 @@ const handleClearAll = () => {
 
 <style scoped>
 .weather-search-view {
+  box-sizing: border-box;
   width: 100%;
-  max-width: 800px;
+  max-width: 900px;
   margin: 0 auto;
   padding-bottom: 40px;
 }

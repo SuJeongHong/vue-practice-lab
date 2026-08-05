@@ -127,7 +127,7 @@ watchEffect(() => {
     <div class="dashboard-content">
       <KoreaWeatherMap :cities="weatherList" :selected-city="searchQuery" @select-city="handleUpdateQuery" />
 
-      <BaseDashboardCard class="live-weather-panel" title="🏙️ 주요 도시 실시간 현황">
+      <BaseDashboardCard class="live-weather-panel" title="주요 도시 실시간 현황">
         <p v-if="loading" class="loading-message">날씨 정보를 불러오는 중입니다.</p>
 
         <p v-else-if="errorMessage" class="error-message">
@@ -140,7 +140,7 @@ watchEffect(() => {
 
         <p v-else class="empty-message">검색 결과와 일치하는 도시가 없습니다.</p>
 
-        <div class="status-bar">
+        <div class="status-bar" aria-live="polite">
           {{ selectedCityInfo }}
         </div>
       </BaseDashboardCard>
@@ -162,7 +162,7 @@ watchEffect(() => {
   display: grid;
   grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
 }
 
 .dashboard-content > * {
@@ -186,23 +186,44 @@ watchEffect(() => {
 }
 
 .dashboard-content :deep(.dashboard-card.live-weather-panel) {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: 18px;
   background: #ffffff;
-  border-color: #e1e8eb;
+  border: 1px solid #e2e8ec;
+  border-radius: 12px;
   box-shadow: 0 4px 14px rgba(39, 55, 64, 0.06);
 }
 
 .dashboard-content :deep(.live-weather-panel h3) {
-  margin-bottom: 12px;
-  padding-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  margin: 0 0 14px;
+  padding-bottom: 12px;
   color: #37474f;
-  border-bottom-color: #edf1f3;
+  font-size: 18px;
+  border-bottom: 1px solid #edf1f3;
+}
+
+.dashboard-content :deep(.live-weather-panel h3::before) {
+  content: 'LIVE WEATHER';
+  color: #3d7d94;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.14em;
 }
 
 .weather-list {
   display: grid;
+  flex: 1;
   gap: 8px;
-  max-height: 480px;
+  min-height: 0;
+  max-height: 540px;
   padding-right: 4px;
   overflow-y: auto;
   scrollbar-color: #b9cdd5 transparent;
@@ -314,7 +335,7 @@ watchEffect(() => {
 }
 
 .status-bar {
-  margin-top: 10px;
+  margin-top: auto;
   padding: 8px 10px;
   color: #607780;
   text-align: center;

@@ -37,75 +37,81 @@ import UnitToggler from './UnitToggler.vue'
   width: 100%;
   max-width: 900px;
   box-sizing: border-box;
-
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-
-  margin: 0 auto 32px;
-  padding: 16px 20px;
-
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid #e3edf3;
-  border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(55, 71, 79, 0.08);
+  gap: 18px;
+  margin: 0 auto 24px;
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8ec;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(39, 55, 64, 0.06);
 }
 
 .navigation-links {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
-  padding: 5px;
-
-  background-color: #f3f7f9;
-  border-radius: 12px;
+  gap: 4px;
+  padding: 4px;
+  background: #f1f6f8;
+  border: 1px solid #e3ecef;
+  border-radius: 10px;
 }
 
 .navigation-link {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 10px 14px;
-
-  color: #546e7a;
+  gap: 6px;
+  padding: 9px 12px;
+  color: #52717d;
+  font-size: 13px;
   font-weight: 700;
   text-decoration: none;
-  border-radius: 9px;
-
+  border: 1px solid transparent;
+  border-radius: 8px;
   transition:
     color 0.2s ease,
     background-color 0.2s ease,
+    border-color 0.2s ease,
     box-shadow 0.2s ease,
     transform 0.2s ease;
 }
 
 .navigation-link:hover {
-  color: #0288d1;
-  background-color: #ffffff;
+  color: #356f82;
+  background: #ffffff;
+  border-color: #d5e3e8;
   transform: translateY(-1px);
 }
 
 .navigation-link--active {
   color: #ffffff;
-  background: linear-gradient(135deg, #29b6f6, #0288d1);
-  box-shadow: 0 5px 12px rgba(2, 136, 209, 0.24);
+  background: #3f8099;
+  border-color: #3f8099;
+  box-shadow: 0 4px 10px rgba(45, 105, 128, 0.22);
 }
 
 .navigation-link--active:hover {
   color: #ffffff;
-  background: linear-gradient(135deg, #29b6f6, #0277bd);
+  background: #356f86;
+  border-color: #356f86;
 }
 
 @media (max-width: 700px) {
   .navigation-bar {
     flex-direction: column;
     align-items: stretch;
+    gap: 10px;
   }
 
   .navigation-links {
     justify-content: center;
+  }
+
+  .navigation-bar :deep(.unit-toggler) {
+    align-self: flex-end;
   }
 }
 

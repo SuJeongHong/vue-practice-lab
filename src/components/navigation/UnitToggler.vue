@@ -15,8 +15,31 @@ const configStore = useConfigStore()
 .unit-toggler {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
   margin-left: auto;
+  padding: 8px 10px;
   text-align: center;
+  background: #f8fbfc;
+  border: 1px solid #dce8ec;
+  border-radius: 9px;
+}
+
+.unit-toggler :deep(.el-switch__label) {
+  color: #718790;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.unit-toggler :deep(.el-switch__label.is-active) {
+  color: #356f82;
+}
+
+.unit-toggler :deep(.el-switch__core) {
+  border-color: #b9cdd5;
+  background: #b9cdd5;
+}
+
+.unit-toggler :deep(.el-switch.is-checked .el-switch__core) {
+  border-color: #3f8099;
+  background: #3f8099;
 }
 </style>
